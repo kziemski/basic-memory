@@ -26,6 +26,7 @@ from basic_memory.services import EntityService, FileService
 from basic_memory.services.link_resolver import LinkResolver
 from basic_memory.services.search_service import SearchService
 from basic_memory.sync import SyncService
+from basic_memory.sync.background_sync import sync_and_watch
 from basic_memory.sync.sync_service import SyncReport
 from basic_memory.sync.watch_service import WatchService
 
@@ -178,11 +179,7 @@ async def run_sync(verbose: bool = False, watch: bool = False, console_status: b
             config=config,
         )
 
-        # full sync - no progress bars in watch mode
-        await sync_service.sync(config.home, show_progress=False)
-
-        # watch changes
-        await watch_service.run()  # pragma: no cover
+        await sync_and_watch(sync_service, watch_service)  # pragma: no cover
     else:
         # one time sync - use progress bars for better UX
         logger.info("Running one-time sync")
