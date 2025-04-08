@@ -7,7 +7,7 @@ from fastapi.exception_handlers import http_exception_handler
 from loguru import logger
 
 from basic_memory import db
-from basic_memory.api.routers import knowledge, memory, project_info, resource, search
+from basic_memory.api.routers import knowledge, management, memory, project_info, resource, search
 from basic_memory.config import config as project_config
 from basic_memory.services.initialization import initialize_app
 
@@ -16,14 +16,14 @@ from basic_memory.services.initialization import initialize_app
 async def lifespan(app: FastAPI):  # pragma: no cover
     """Lifecycle manager for the FastAPI app."""
     # Initialize database and file sync services
-    watch_task = await initialize_app(project_config)
+    app.state.watch_task = await initialize_app(project_config)
 
     # proceed with startup
     yield
 
     logger.info("Shutting down Basic Memory API")
-    if watch_task:
-        watch_task.cancel()
+    if app.state.watch_task:
+        app.state.watch_task.cancel()  # pyright: ignore
 
     await db.shutdown_db()
 
@@ -39,10 +39,12 @@ app = FastAPI(
 
 # Include routers
 app.include_router(knowledge.router)
-app.include_router(search.router)
+app.include_router(management.router)
 app.include_router(memory.router)
 app.include_router(resource.router)
 app.include_router(project_info.router)
+app.include_router(resource.router)
+app.include_router(search.router)
 
 
 @app.exception_handler(Exception)
