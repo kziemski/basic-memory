@@ -19,7 +19,7 @@ from basic_memory.repository.project_info_repository import ProjectInfoRepositor
 from basic_memory.repository.relation_repository import RelationRepository
 from basic_memory.repository.search_repository import SearchRepository
 from basic_memory.services import (
-    EntityService,
+    EntityService, ProjectService
 )
 from basic_memory.services.context_service import ContextService
 from basic_memory.services.file_service import FileService
@@ -217,3 +217,13 @@ async def get_sync_service(
 
 
 SyncServiceDep = Annotated[SyncService, Depends(get_sync_service)]
+
+
+async def get_project_service(
+    project_info_repository: ProjectInfoRepositoryDep,
+) -> ProjectService:
+    """Create ProjectService with repository."""
+    return ProjectService(repository=project_info_repository)
+
+
+ProjectServiceDep = Annotated[ProjectService, Depends(get_project_service)]

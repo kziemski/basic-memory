@@ -6,8 +6,9 @@ from fastapi import FastAPI, HTTPException
 from fastapi.exception_handlers import http_exception_handler
 from loguru import logger
 
+from basic_memory import __version__ as version
 from basic_memory import db
-from basic_memory.api.routers import knowledge, management, memory, project_info, resource, search
+from basic_memory.api.routers import knowledge, management, memory, project, resource, search
 from basic_memory.config import config as project_config
 from basic_memory.services.initialization import initialize_app
 
@@ -32,7 +33,7 @@ async def lifespan(app: FastAPI):  # pragma: no cover
 app = FastAPI(
     title="Basic Memory API",
     description="Knowledge graph API for basic-memory",
-    version="0.1.0",
+    version=version,
     lifespan=lifespan,
 )
 
@@ -42,10 +43,9 @@ app.include_router(knowledge.router)
 app.include_router(management.router)
 app.include_router(memory.router)
 app.include_router(resource.router)
-app.include_router(project_info.router)
 app.include_router(resource.router)
 app.include_router(search.router)
-
+app.include_router(project.router)
 
 @app.exception_handler(Exception)
 async def exception_handler(request, exc):  # pragma: no cover
