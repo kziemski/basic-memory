@@ -20,7 +20,6 @@ class DirectoryNode:
     name: str
     path: str
     type: Literal["directory", "file"]
-    has_children: bool
     title: str
     permalink: Optional[str] = None
     entity_id: Optional[int] = None
@@ -35,9 +34,7 @@ class DirectoryNode:
             name=name,
             path=path,
             type="directory",
-            title=name,  # Title same as name for directories
-            has_children=True,
-            # File-specific fields remain None
+            title=name,  
         )
         
     @classmethod
@@ -48,7 +45,6 @@ class DirectoryNode:
             path=path, 
             type="file",
             title=kwargs.get("title", name),
-            has_children=False,
             permalink=permalink,
             entity_id=kwargs.get("entity_id"),
             entity_type=kwargs.get("entity_type"),
@@ -65,19 +61,18 @@ class DirectoryRepository(Repository):
         super().__init__(session_maker, None)  # type: ignore
 
     async def get_directory_tree(
-        self, base_path: str = "", depth: int = 1, include_files: bool = True
+        self, base_path: str = "", include_files: bool = True
     ) -> List[DirectoryNode]:
         """Get directory tree at a specific depth level.
 
         Args:
             base_path: Base path to start from (empty for root)
-            depth: Which depth level to fetch (1 = immediate children)
             include_files: Whether to include files or just directories
 
         Returns:
             List of DirectoryNode objects representing the directory tree
         """
-        logger.debug(f"Getting tree for base_path={base_path}, depth={depth}")
+        logger.debug(f"Getting tree for base_path={base_path}")
         
         # List to store results
         result: List[DirectoryNode] = []

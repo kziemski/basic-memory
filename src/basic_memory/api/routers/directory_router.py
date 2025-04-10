@@ -13,22 +13,20 @@ router = APIRouter(prefix="/directory", tags=["directory"])
 @router.get("/tree", response_model=DirectoryTreeSchema)
 async def get_directory_tree(
     directory_service: DirectoryServiceDep,
-    path: Optional[str] = Query("", description="Base path to start from"),
-    depth: int = Query(1, description="Depth level to fetch (1 = just immediate children)"),
+    path: str = Query("", description="Directory path"),
     include_files: bool = Query(True, description="Include files in results"),
 ):
     """Get hierarchical directory structure from the knowledge base.
     
     Params:
         path: Base path to start from (empty for root)
-        depth: Which depth level to fetch (1 = immediate children)
         include_files: Whether to include files or just directories
     
     Returns:
         DirectoryTreeSchema containing nodes and metadata
     """
     # Get directory nodes from service
-    nodes = await directory_service.get_directory_tree(path, depth, include_files)
+    nodes = await directory_service.get_directory_tree(path, include_files)
     
     # Calculate parent path if not at root
     parent_path = None
@@ -43,6 +41,5 @@ async def get_directory_tree(
     return DirectoryTreeSchema(
         items=[DirectoryNodeSchema(**node.__dict__) for node in nodes],
         path=path or "/",
-        depth=depth,
         parent_path=parent_path
     )

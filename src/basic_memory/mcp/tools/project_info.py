@@ -45,7 +45,7 @@ async def project_info() -> ProjectInfoResponse:
     logger.info("Getting project info")
 
     # Call the API endpoint
-    response = await call_get(client, "/stats/project-info")
+    response = await call_get(client, "/project/info")
 
     # Convert response to ProjectInfoResponse
     return ProjectInfoResponse.model_validate(response.json())

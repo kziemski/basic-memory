@@ -24,13 +24,12 @@ class DirectoryService:
         self.base_path = base_path
 
     async def get_directory_tree(
-        self, base_path: str = "", depth: int = 1, include_files: bool = True
+        self, base_path: str = "", include_files: bool = True
     ) -> List[DirectoryNode]:
         """Get directory tree at a specific depth level.
 
         Args:
             base_path: Base path to start from (empty for root)
-            depth: Which depth level to fetch (1 = immediate children)
             include_files: Whether to include files or just directories
 
         Returns:
@@ -46,7 +45,7 @@ class DirectoryService:
                 db_path = db_path[:-1]
             
             # Fetch directory tree from repository
-            nodes = await self.repository.get_directory_tree(db_path, depth, include_files)
+            nodes = await self.repository.get_directory_tree(db_path, include_files)
             
             logger.debug(f"Found {len(nodes)} items in directory tree")
             return nodes
