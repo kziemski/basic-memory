@@ -19,11 +19,13 @@ from basic_memory.models import Base
 from basic_memory.models.knowledge import Entity
 from basic_memory.repository.entity_repository import EntityRepository
 from basic_memory.repository.observation_repository import ObservationRepository
+from basic_memory.repository.project_info_repository import ProjectInfoRepository
 from basic_memory.repository.relation_repository import RelationRepository
 from basic_memory.repository.search_repository import SearchRepository
 from basic_memory.schemas.base import Entity as EntitySchema
 from basic_memory.services import (
     EntityService,
+    ProjectService,
 )
 from basic_memory.services.file_service import FileService
 from basic_memory.services.link_resolver import LinkResolver
@@ -199,6 +201,21 @@ async def sample_entity(entity_repository: EntityRepository) -> Entity:
 
 
 @pytest_asyncio.fixture
+async def project_info_repository(
+    session_maker: async_sessionmaker[AsyncSession],
+):
+    """Dependency for StatsRepository."""
+    return ProjectInfoRepository(session_maker)
+
+@pytest_asyncio.fixture
+async def project_service(
+    project_info_repository: ProjectInfoRepository,
+) -> ProjectService:
+    """Create ProjectService with repository."""
+    return ProjectService(repository=project_info_repository)
+
+
+@pytest_asyncio.fixture
 async def full_entity(sample_entity, entity_repository, file_service, entity_service) -> Entity:
     """Create a search test entity."""
 
@@ -314,7 +331,7 @@ async def test_graph(
     }
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 def watch_service(sync_service, file_service, test_config):
     return WatchService(sync_service=sync_service, file_service=file_service, config=test_config)
 

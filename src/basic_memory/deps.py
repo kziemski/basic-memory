@@ -13,6 +13,7 @@ from basic_memory import db
 from basic_memory.config import ProjectConfig, config
 from basic_memory.markdown import EntityParser
 from basic_memory.markdown.markdown_processor import MarkdownProcessor
+from basic_memory.repository.directory_repository import DirectoryRepository
 from basic_memory.repository.entity_repository import EntityRepository
 from basic_memory.repository.observation_repository import ObservationRepository
 from basic_memory.repository.project_info_repository import ProjectInfoRepository
@@ -22,6 +23,7 @@ from basic_memory.services import (
     EntityService, ProjectService
 )
 from basic_memory.services.context_service import ContextService
+from basic_memory.services.directory_service import DirectoryService
 from basic_memory.services.file_service import FileService
 from basic_memory.services.link_resolver import LinkResolver
 from basic_memory.services.search_service import SearchService
@@ -227,3 +229,27 @@ async def get_project_service(
 
 
 ProjectServiceDep = Annotated[ProjectService, Depends(get_project_service)]
+
+
+async def get_directory_repository(
+    session_maker: SessionMakerDep,
+) -> DirectoryRepository:
+    """Create a DirectoryRepository instance."""
+    return DirectoryRepository(session_maker)
+
+
+DirectoryRepositoryDep = Annotated[DirectoryRepository, Depends(get_directory_repository)]
+
+
+async def get_directory_service(
+    directory_repository: DirectoryRepositoryDep,
+    project_config: ProjectConfigDep,
+) -> DirectoryService:
+    """Create DirectoryService with dependencies."""
+    return DirectoryService(
+        repository=directory_repository,
+        base_path=project_config.home,
+    )
+
+
+DirectoryServiceDep = Annotated[DirectoryService, Depends(get_directory_service)]

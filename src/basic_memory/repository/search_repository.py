@@ -46,6 +46,26 @@ class SearchIndexRow:
     @property
     def content(self):
         return self.content_snippet
+        
+    @property
+    def directory(self) -> str:
+        """Extract directory part from file_path.
+        
+        For a file at "projects/notes/ideas.md", returns "projects/notes"
+        For a file at root level "README.md", returns empty string
+        """
+        if not self.file_path:
+            return ""
+            
+        # Split the path by slashes
+        parts = self.file_path.split("/")
+        
+        # If there's only one part (e.g., "README.md"), there's no directory
+        if len(parts) <= 1:
+            return ""
+            
+        # Join all parts except the last one (filename)
+        return "/".join(parts[:-1])
 
     def to_insert(self):
         return {
@@ -55,6 +75,7 @@ class SearchIndexRow:
             "content_snippet": self.content_snippet,
             "permalink": self.permalink,
             "file_path": self.file_path,
+            "directory": self.directory,  # Add directory column
             "type": self.type,
             "metadata": json.dumps(self.metadata),
             "from_id": self.from_id,
@@ -273,12 +294,12 @@ class SearchRepository:
             await session.execute(
                 text("""
                     INSERT INTO search_index (
-                        id, title, content_stems, content_snippet, permalink, file_path, type, metadata,
+                        id, title, content_stems, content_snippet, permalink, file_path, directory, type, metadata,
                         from_id, to_id, relation_type,
                         entity_id, category,
                         created_at, updated_at
                     ) VALUES (
-                        :id, :title, :content_stems, :content_snippet, :permalink, :file_path, :type, :metadata,
+                        :id, :title, :content_stems, :content_snippet, :permalink, :file_path, :directory, :type, :metadata,
                         :from_id, :to_id, :relation_type,
                         :entity_id, :category,
                         :created_at, :updated_at
