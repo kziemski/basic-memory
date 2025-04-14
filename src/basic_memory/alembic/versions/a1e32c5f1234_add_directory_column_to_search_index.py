@@ -63,11 +63,7 @@ def upgrade() -> None:
            metadata, created_at, updated_at
     FROM search_index
     """)
-    
-    # Step 3: Count backup rows
-    backup_count = op.execute("SELECT COUNT(*) FROM search_index_backup")
-    print(f"Backed up {backup_count} records")
-    
+        
     # Step 4: Drop the existing search_index table 
     print("Recreating search_index with directory column...")
     op.execute("DROP TABLE IF EXISTS search_index")
@@ -104,28 +100,41 @@ def upgrade() -> None:
         type, from_id, to_id, relation_type, entity_id, category, metadata, 
         created_at, updated_at
     )
+    -- get the directory name from the file_path
     SELECT 
         id, title, content_stems, content_snippet, permalink, file_path,
         CASE 
-            WHEN file_path IS NULL THEN NULL
-            WHEN instr(file_path, '/') = 0 THEN ''
-            ELSE rtrim(substr(file_path, 1, instr(file_path, '/')), '/')
+            WHEN type != 'entity' THEN NULL
+            ELSE 
+            (select '/' || rtrim(
+                -- get file path
+               rtrim(
+                       file_path,
+                        -- get filename pathtofile.md -> file.md
+                       replace(
+                               file_path,
+                               -- remove slashes /path/to/file.md -> pathtofile.md
+                               rtrim(
+                                       file_path,
+                                       -- get file name
+                                       replace(file_path, '/', '')
+                               ),
+                               ''
+                       )
+               ),
+               '/'
+            ))
         END,
         type, from_id, to_id, relation_type, entity_id, category, metadata, 
         created_at, updated_at
     FROM search_index_backup
     """)
-    
-    # Step 7: Verify restoration
-    restored_count = op.execute("SELECT COUNT(*) FROM search_index")
-    print(f"Restored {restored_count} records with directory column")
-    
+        
     # Step 8: Clean up
     op.execute("DROP TABLE search_index_backup")
     
     print("\n==================================================================")
     print(f"SUCCESS: Added directory column to search_index")
-    print(f"Backed up and restored {backup_count} records")
     print("==================================================================\n")
 
 

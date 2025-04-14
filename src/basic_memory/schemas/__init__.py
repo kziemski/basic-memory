@@ -45,8 +45,8 @@ from basic_memory.schemas.project_info import (
 )
 
 from basic_memory.schemas.directory import (
-    DirectoryNodeSchema,
-    DirectoryTreeSchema,
+    DirectoryTree,
+    DirectoryItem,
 )
 
 # For convenient imports, export all models
@@ -77,6 +77,6 @@ __all__ = [
     "SystemStatus",
     "ProjectInfoResponse",
     # Directory
-    "DirectoryNodeSchema",
-    "DirectoryTreeSchema",
+    "DirectoryTree",
+    "DirectoryItem",
 ]

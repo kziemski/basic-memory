@@ -81,7 +81,7 @@ class BasicMemoryConfig(BaseSettings):
         description="Name of the default project to use",
     )
 
-    log_level: str = "INFO"
+    log_level: str = "DEBUG"
 
     update_permalinks_on_move: bool = Field(
         default=False,

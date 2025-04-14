@@ -2,118 +2,130 @@
 
 import pytest
 
-import pytest_asyncio
-from basic_memory.repository.directory_repository import DirectoryRepository
+from basic_memory.repository import EntityRepository
+from basic_memory.schemas import DirectoryTree, Entity as EntitySchema
 from basic_memory.services.directory_service import DirectoryService
-
-
-@pytest_asyncio.fixture
-async def directory_repository(session_maker) -> DirectoryRepository:
-    """Create a DirectoryRepository instance."""
-    return DirectoryRepository(session_maker)
-
-
-@pytest_asyncio.fixture
-async def directory_service(directory_repository, test_config) -> DirectoryService:
-    """Create directory service for testing."""
-    return DirectoryService(
-        repository=directory_repository,
-        base_path=test_config.home,
-    )
+from basic_memory.services.entity_service import EntityService
+from basic_memory.services.search_service import SearchService
 
 
 @pytest.mark.asyncio
-async def test_get_directory_tree_empty(directory_service):
+async def test_directory_tree_empty(directory_service: DirectoryService):
     """Test getting empty directory tree."""
     # When no entities exist, tree should be empty
-    result = await directory_service.get_directory_tree("",  True)
-    assert isinstance(result, list)
-    assert len(result) == 0
+    result = await directory_service.directory_tree()
+    assert isinstance(result, DirectoryTree)
+    assert len(result.items) == 0
 
 
 @pytest.mark.asyncio
-async def test_get_directory_tree_with_entities(directory_service, test_graph):
-    """Test getting directory tree with multiple entities."""
-    # Test graph fixture creates several entities in the "test" folder
-    result = await directory_service.get_directory_tree("",  True)
-    
-    # First, check we got some results
-    assert len(result) > 0
-    
-    # Verify we have at least one directory node
-    directory_nodes = [node for node in result if node.type == "directory"]
-    assert len(directory_nodes) > 0
-    assert any(node.name == "test" for node in directory_nodes)
-    
-    # Check directory node properties
-    for directory in directory_nodes:
-        assert directory.name is not None
-        assert directory.path is not None
-        assert directory.type == "directory"
-        
-    # Check if we have file nodes
-    file_nodes = [node for node in result if node.type == "file"]
-    if file_nodes:
-        # Verify file node properties
-        for file in file_nodes:
-            assert file.name is not None
-            assert file.path is not None
-            assert file.type == "file"
-            # Files at root level should have permalink and entity_id
-            assert file.permalink is not None
-            assert file.entity_id is not None
+async def test_directory_tree(directory_service: DirectoryService, test_graph):
+    # test_graph files:
+    # /
+    # ├── test
+    # │   ├── Connected Entity 1.md
+    # │   ├── Connected Entity 2.md
+    # │   ├── Deep Entity.md
+    # │   ├── Deeper Entity.md
+    # │   └── Root.md
+
+    tree = await directory_service.directory_tree()
+    assert isinstance(tree, DirectoryTree)
+    assert len(tree.items) == 6  # including root
+
+    test_dir = tree.items.get("test")
+    assert test_dir is not None
+    assert test_dir.index == "test"
+    assert len(test_dir.children) == 5
 
 
 @pytest.mark.asyncio
-async def test_get_directory_tree_with_path(directory_service, test_graph):
-    """Test getting directory tree with specific path."""
-    # First get the root level
-    root_result = await directory_service.get_directory_tree("",  True)
-    
-    # Find test folder
-    test_folder = next((node for node in root_result if node.type == "directory" and node.name == "test"), None)
-    assert test_folder is not None
-    
-    # Now get the contents of the test folder
-    test_contents = await directory_service.get_directory_tree(test_folder.path,  True)
-    
-    # Verify we got the entities in the test folder
-    assert len(test_contents) > 0
-    
-    # All items should be under the test folder
-    for node in test_contents:
-        if node.type == "file":
-            assert node.path.startswith(test_folder.path)
-
+async def test_directory_tree_invalid_path(directory_service: DirectoryService, test_graph):
+    tree = await directory_service.directory_tree("/invalid")
+    assert isinstance(tree, DirectoryTree)
+    assert len(tree.items) == 0
 
 
 @pytest.mark.asyncio
-async def test_get_directory_tree_files_only(directory_service, test_graph):
-    """Test getting only files in directory tree."""
-    # Get directory tree with files
-    result_with_files = await directory_service.get_directory_tree("",  True)
-    assert len(result_with_files) > 0
-    
-    # Get directory tree with no files
-    result_no_files = await directory_service.get_directory_tree("",  False)
-    
-    # There should be fewer results when excluding files
-    if len(result_with_files) > len(result_no_files):
-        # Some files were excluded
-        assert all(node.type == "directory" for node in result_no_files)
-    
-    # Count files and directories in original result
-    file_count = len([node for node in result_with_files if node.type == "file"])
-    dir_count = len([node for node in result_with_files if node.type == "directory"])
-    
-    # No-files result should have only directories
-    assert len(result_no_files) == dir_count
+async def test_directory_tree_root(
+    entity_service: EntityService,
+    directory_service: DirectoryService,
+    entity_repository: EntityRepository,
+    search_service: SearchService,
+):
+    # /
+    # ├── another
+    # │   ├── another_test.md
+    # │   └── sub
+    # │       └── another_test_sub.md
+    # ├── root.md
+    # ├── test
+    #     ├── sub
+    #     │   └── test_sub.md
+    #     └── test.md
+     
+    # /root.md 
+    await entity_service.create_entity(
+        EntitySchema(
+            title="root",
+            folder="",
+            content="root",
+        )
+    )
 
+    # /test/test.md
+    await entity_service.create_entity(
+        EntitySchema(
+            title="test",
+            folder="test",
+            content="test/test",
+        )
+    )
 
-@pytest.mark.asyncio
-async def test_get_directory_tree_invalid_path(directory_service):
-    """Test getting directory tree with invalid path."""
-    # Using a path that doesn't exist should return empty results, not error
-    result = await directory_service.get_directory_tree("nonexistent_path",  True)
-    assert isinstance(result, list)
-    assert len(result) == 0
+    # /test/sub/test_sub.md
+    await entity_service.create_entity(
+        EntitySchema(
+            title="test_sub",
+            folder="test/sub",
+            content="test sub",
+        )
+    )
+
+    # /another/another_test.md
+    await entity_service.create_entity(
+        EntitySchema(
+            title="another_test",
+            folder="another",
+            content="another test",
+        )
+    )
+
+    # /another/sub/another_test_sub.md
+    await entity_service.create_entity(
+        EntitySchema(
+            title="another_test_sub",
+            folder="another/sub",
+            content="another test sub",
+        )
+    )
+
+    entities = await entity_repository.find_all()
+
+    # Index everything for search
+    for entity in entities:
+        await search_service.index_entity(entity)
+
+    tree = await directory_service.directory_tree()
+    assert isinstance(tree, DirectoryTree)
+    assert len(tree.items) == 10  # including root
+
+    tree_root = tree.items.get("")
+    assert tree_root is not None
+    assert tree_root.index == ""
+    assert len(tree_root.children) == 3
+    root_children = [child.index for child in tree_root.children]
+    assert "/root.md" in root_children
+    assert "/another" in root_children
+    assert "/test" in root_children
+    
+    assert tree.items.get("/root.md")

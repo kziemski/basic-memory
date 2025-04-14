@@ -51,21 +51,22 @@ class SearchIndexRow:
     def directory(self) -> str:
         """Extract directory part from file_path.
         
-        For a file at "projects/notes/ideas.md", returns "projects/notes"
-        For a file at root level "README.md", returns empty string
+        For a file at "projects/notes/ideas.md", returns "/projects/notes"
+        For a file at root level "README.md", returns "/"
         """
-        if not self.file_path:
+        if not self.type == SearchItemType.ENTITY.value and not self.file_path:
             return ""
             
         # Split the path by slashes
         parts = self.file_path.split("/")
         
-        # If there's only one part (e.g., "README.md"), there's no directory
+        # If there's only one part (e.g., "README.md"), it's at the root
         if len(parts) <= 1:
-            return ""
+            return "/"
             
         # Join all parts except the last one (filename)
-        return "/".join(parts[:-1])
+        directory_path = "/".join(parts[:-1])
+        return f"/{directory_path}"
 
     def to_insert(self):
         return {
@@ -75,7 +76,7 @@ class SearchIndexRow:
             "content_snippet": self.content_snippet,
             "permalink": self.permalink,
             "file_path": self.file_path,
-            "directory": self.directory,  # Add directory column
+            "directory": self.directory if self.type == SearchItemType.ENTITY.value else None,
             "type": self.type,
             "metadata": json.dumps(self.metadata),
             "from_id": self.from_id,

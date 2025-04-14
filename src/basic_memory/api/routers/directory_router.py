@@ -1,16 +1,14 @@
 """Router for directory tree operations."""
 
-import os
-from fastapi import APIRouter, Depends, Query
-from typing import List, Optional
+from fastapi import APIRouter, Query
 
 from basic_memory.deps import DirectoryServiceDep
-from basic_memory.schemas.directory import DirectoryNodeSchema, DirectoryTreeSchema
+from basic_memory.schemas.directory import DirectoryTree
 
 router = APIRouter(prefix="/directory", tags=["directory"])
 
 
-@router.get("/tree", response_model=DirectoryTreeSchema)
+@router.get("/tree", response_model=DirectoryTree)
 async def get_directory_tree(
     directory_service: DirectoryServiceDep,
     path: str = Query("", description="Directory path"),
@@ -26,20 +24,6 @@ async def get_directory_tree(
         DirectoryTreeSchema containing nodes and metadata
     """
     # Get directory nodes from service
-    nodes = await directory_service.get_directory_tree(path, include_files)
+    nodes = await directory_service.list_files(path, include_files)
+
     
-    # Calculate parent path if not at root
-    parent_path = None
-    if path:
-        parent_parts = path.rstrip('/').split('/')
-        if len(parent_parts) > 1:
-            parent_path = '/'.join(parent_parts[:-1])
-            if not parent_path:
-                parent_path = "/"  # Root when coming from first level directory
-    
-    # Convert to schema response
-    return DirectoryTreeSchema(
-        items=[DirectoryNodeSchema(**node.__dict__) for node in nodes],
-        path=path or "/",
-        parent_path=parent_path
-    )

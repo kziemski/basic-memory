@@ -17,6 +17,7 @@ from basic_memory.markdown import EntityParser
 from basic_memory.markdown.markdown_processor import MarkdownProcessor
 from basic_memory.models import Base
 from basic_memory.models.knowledge import Entity
+from basic_memory.repository.directory_repository import DirectoryRepository
 from basic_memory.repository.entity_repository import EntityRepository
 from basic_memory.repository.observation_repository import ObservationRepository
 from basic_memory.repository.project_info_repository import ProjectInfoRepository
@@ -27,6 +28,7 @@ from basic_memory.services import (
     EntityService,
     ProjectService,
 )
+from basic_memory.services.directory_service import DirectoryService
 from basic_memory.services.file_service import FileService
 from basic_memory.services.link_resolver import LinkResolver
 from basic_memory.services.search_service import SearchService
@@ -34,12 +36,12 @@ from basic_memory.sync.sync_service import SyncService
 from basic_memory.sync.watch_service import WatchService
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 def anyio_backend():
     return "asyncio"
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 def test_config(tmp_path) -> ProjectConfig:
     """Test configuration using in-memory DB."""
     config = ProjectConfig(
@@ -73,6 +75,7 @@ async def session_maker(engine_factory) -> async_sessionmaker[AsyncSession]:
     _, session_maker = engine_factory
     return session_maker
 
+## Repositories
 
 @pytest_asyncio.fixture(scope="function")
 async def entity_repository(session_maker: async_sessionmaker[AsyncSession]) -> EntityRepository:
@@ -95,6 +98,15 @@ async def relation_repository(
     """Create a RelationRepository instance."""
     return RelationRepository(session_maker)
 
+
+@pytest_asyncio.fixture
+async def directory_repository(session_maker) -> DirectoryRepository:
+    """Create a DirectoryRepository instance."""
+    return DirectoryRepository(session_maker)
+
+
+
+## Services
 
 @pytest_asyncio.fixture
 async def entity_service(
@@ -160,6 +172,17 @@ async def sync_service(
         search_service=search_service,
         file_service=file_service,
     )
+
+
+@pytest_asyncio.fixture
+async def directory_service(directory_repository, test_config) -> DirectoryService:
+    """Create directory service for testing."""
+    return DirectoryService(
+        repository=directory_repository,
+        base_path=test_config.home,
+    )
+
+
 
 
 @pytest_asyncio.fixture
