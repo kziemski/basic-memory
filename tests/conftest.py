@@ -17,7 +17,6 @@ from basic_memory.markdown import EntityParser
 from basic_memory.markdown.markdown_processor import MarkdownProcessor
 from basic_memory.models import Base
 from basic_memory.models.knowledge import Entity
-from basic_memory.repository.directory_repository import DirectoryRepository
 from basic_memory.repository.entity_repository import EntityRepository
 from basic_memory.repository.observation_repository import ObservationRepository
 from basic_memory.repository.project_info_repository import ProjectInfoRepository
@@ -99,13 +98,6 @@ async def relation_repository(
     return RelationRepository(session_maker)
 
 
-@pytest_asyncio.fixture
-async def directory_repository(session_maker) -> DirectoryRepository:
-    """Create a DirectoryRepository instance."""
-    return DirectoryRepository(session_maker)
-
-
-
 ## Services
 
 @pytest_asyncio.fixture
@@ -175,14 +167,11 @@ async def sync_service(
 
 
 @pytest_asyncio.fixture
-async def directory_service(directory_repository, test_config) -> DirectoryService:
+async def directory_service(entity_repository, test_config) -> DirectoryService:
     """Create directory service for testing."""
     return DirectoryService(
-        repository=directory_repository,
-        base_path=test_config.home,
+        entity_repository=entity_repository,
     )
-
-
 
 
 @pytest_asyncio.fixture

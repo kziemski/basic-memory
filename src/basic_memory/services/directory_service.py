@@ -3,15 +3,10 @@
 import logging
 import os
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import List
 
-from basic_memory.repository.directory_repository import DirectoryRepository, FileRow
-from basic_memory.schemas.directory import (
-    DirectoryTree, 
-    DirectoryItem, 
-    DirectoryNode, 
-    DirectoryTreeResponse
-)
+from basic_memory.repository import EntityRepository
+from basic_memory.schemas.directory import DirectoryNode
 
 logger = logging.getLogger(__name__)
 
@@ -19,125 +14,90 @@ logger = logging.getLogger(__name__)
 class DirectoryService:
     """Service for working with directory trees."""
 
-    def __init__(self, repository: DirectoryRepository, base_path: Path):
+    def __init__(self, entity_repository: EntityRepository):
         """Initialize the directory service.
 
         Args:
             repository: Directory repository for data access.
             base_path: Base path for the project.
         """
-        self.repository = repository
-        self.base_path = base_path
+        self.entity_repository = entity_repository
 
-    async def directory_tree(
-        self, directory_path: str = "", include_files: bool = True
-    ) -> DirectoryTree:
-        """Get directory tree in the old format.
+    async def get_directory_tree(self) -> List[DirectoryNode]:
+        """Build a clean directory tree from indexed files."""
 
-        Args:
-            directory_path: Directory path to start from (empty for root)
-            include_files: Whether to include files in the tree
-        Returns:
-            DirectoryTree object representing the hierarchy
-            
-        """
-        file_rows = await self.repository.list_files(directory_path)
-        directory_items: Dict[str, DirectoryItem] = {}
+        # Get all files from DB (flat list)
+        entity_rows = await self.entity_repository.find_all()
 
-        for file_row in file_rows:
-            # Use the file path as the index
-            index = file_row.path
-            directory = file_row.directory
-            
-            # Get the parent's children list
-            parent_path = str(Path(file_row.path).parent)
-            if parent_path == ".":
-                parent_path = ""
+        # Create a clean dictionary of directories
+        directories = {"/": {"name": "Root", "path": "/", "children": []}}
 
-            # Create or update parent's children list
-            if parent_path in directory_items:
-                directory_items[parent_path].children.append(index)
-            else:
-                directory_items[parent_path] = DirectoryItem(
-                    index=parent_path,
-                    canMove=True,
-                    isFolder=True,
-                    children=[index],
-                    data=Path(parent_path).name or "Root",
-                    canRename=True,
-                )
-
-            # Add the file/directory item
-            directory_items[index] = DirectoryItem(
-                index=index,
-                canMove=True,
-                isFolder=False,
-                children=[],  
-                data=file_row.name,
-                canRename=True,
-            )
-
-        return DirectoryTree(items=directory_items)
-        
-    async def list_files(
-        self, directory_path: str = "", include_files: bool = True, depth: int = 1
-    ) -> List[DirectoryNode]:
-        """Get directory contents as a flat list.
-        
-        This returns a list of DirectoryNode objects representing files and directories
-        at the given path, formatted for the API response expected by the client.
-        
-        Args:
-            directory_path: Directory path to start from (empty for root)
-            include_files: Whether to include files or just directories
-            depth: How deep to traverse the directory tree (default: 1 level)
-            
-        Returns:
-            List of DirectoryNode objects
-        """
-        # Get file rows directly from repository - our improved repository implementation
-        # already handles directory structure correctly
-        file_rows = await self.repository.list_files(directory_path)
-        
-        # Convert to DirectoryNode objects
-        result_nodes: List[DirectoryNode] = []
-        
-        for row in file_rows:
-            # Skip files if not including files
-            if not include_files and row.type not in ["directory"]:
+        # Process files to build tree structure
+        for file in entity_rows:
+            path = file.file_path
+            if not path:
                 continue
-                
-            # Calculate parent path
-            parent_path = os.path.dirname(row.path)
-            if parent_path == ".":
-                parent_path = ""
-                
-            # Determine node type - directory or file
-            node_type = "directory" if row.type == "directory" else "file"
-            
-            # Add to result nodes
-            result_nodes.append(
+
+            # Get all directory parts
+            parts = [p for p in path.split("/") if p]
+            current_path = "/"
+
+            # Create directory entries for each part of the path
+            for i, part in enumerate(parts[:-1]):  # Skip the file name
+                parent_path = current_path
+                current_path = (
+                    f"{current_path}{part}" if current_path == "/" else f"{current_path}/{part}"
+                )
+
+                if current_path not in directories:
+                    directories[current_path] = {
+                        "name": part,
+                        "path": current_path,
+                        "parent_path": parent_path,
+                        "children": [],
+                    }
+                    directories[parent_path]["children"].append(current_path)
+
+            # Add file to its parent directory
+            if parts:
+                parent_dir = "/".join(parts[:-1])
+                parent_dir = f"/{parent_dir}" if parent_dir else "/"
+                if parent_dir in directories:
+                    directories[parent_dir]["children"].append(path)
+
+        # Convert to DirectoryNode objects
+        result = []
+        for path, dir_info in directories.items():
+            result.append(
                 DirectoryNode(
-                    name=row.name,
-                    path=row.path,
-                    type=node_type,
-                    has_children=(node_type == "directory"),  # Directories have children
-                    title=row.title,
-                    permalink=row.permalink,
-                    entity_id=row.entity_id,
-                    entity_type=row.type if node_type == "file" else None,
-                    content_type=row.content_type,
-                    updated_at=row.updated_at,
-                    parent_path=parent_path
+                    name=dir_info["name"],
+                    path=path,
+                    type="directory",
+                    has_children=bool(dir_info["children"]),
+                    parent_path=dir_info.get("parent_path", ""),
+                    title=dir_info["name"],
                 )
             )
-        
-        # Sort results: directories first, then alphabetically by name
-        result_nodes.sort(
-            key=lambda x: (
-                0 if x.type == "directory" else 1,  # Directories first
-                x.name.lower()  # Then alphabetically
-            )
-        )
-        
-        return result_nodes
+
+        # Add files
+        for file in entity_rows:
+            if file.file_path:
+                parent_dir = os.path.dirname(file.file_path)
+                parent_dir = "/" if parent_dir == "" else f"/{parent_dir}"
+                result.append(
+                    DirectoryNode(
+                        name=os.path.basename(file.file_path),
+                        path=file.file_path,
+                        type="file",
+                        has_children=False,
+                        parent_path=parent_dir,
+                        title=file.title,
+                        permalink=file.permalink,
+                        entity_id=file.id,
+                        entity_type=file.entity_type,
+                        content_type=file.content_type,
+                        updated_at=file.updated_at,
+                    )
+                )
+
+        return result
