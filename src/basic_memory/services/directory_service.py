@@ -1,11 +1,17 @@
 """Directory service for managing file directories and tree structure."""
 
 import logging
+import os
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List, Optional, Set
 
-from basic_memory.repository.directory_repository import DirectoryRepository
-from basic_memory.schemas import DirectoryTree, DirectoryItem
+from basic_memory.repository.directory_repository import DirectoryRepository, FileRow
+from basic_memory.schemas.directory import (
+    DirectoryTree, 
+    DirectoryItem, 
+    DirectoryNode, 
+    DirectoryTreeResponse
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,47 +32,7 @@ class DirectoryService:
     async def directory_tree(
         self, directory_path: str = "", include_files: bool = True
     ) -> DirectoryTree:
-        """Get directory tree at a specific depth level.
-
-        # /
-        # ├── another
-        # │   ├── another_test.md
-        # │   └── sub
-        # │       └── another_test_sub.md
-        # ├── root.md
-        # ├── test
-        #     ├── sub
-        #     │   └── test_sub.md
-        #     └── test.md
-        
-        tree
-        
-        const items = {
-          root: {
-            index: 'root',
-            canMove: true,
-            isFolder: true,
-            children: ['child1', 'child2'],
-            data: 'Root item',
-            canRename: true,
-          },
-          child1: {
-            index: 'child1',
-            canMove: true,
-            isFolder: false,
-            children: [],
-            data: 'Child item 1',
-            canRename: true,
-          },
-          child2: {
-            index: 'child2',
-            canMove: true,
-            isFolder: false,
-            children: [],
-            data: 'Child item 2',
-            canRename: true,
-          },
-        };
+        """Get directory tree in the old format.
 
         Args:
             directory_path: Directory path to start from (empty for root)
@@ -112,3 +78,66 @@ class DirectoryService:
             )
 
         return DirectoryTree(items=directory_items)
+        
+    async def list_files(
+        self, directory_path: str = "", include_files: bool = True, depth: int = 1
+    ) -> List[DirectoryNode]:
+        """Get directory contents as a flat list.
+        
+        This returns a list of DirectoryNode objects representing files and directories
+        at the given path, formatted for the API response expected by the client.
+        
+        Args:
+            directory_path: Directory path to start from (empty for root)
+            include_files: Whether to include files or just directories
+            depth: How deep to traverse the directory tree (default: 1 level)
+            
+        Returns:
+            List of DirectoryNode objects
+        """
+        # Get file rows directly from repository - our improved repository implementation
+        # already handles directory structure correctly
+        file_rows = await self.repository.list_files(directory_path)
+        
+        # Convert to DirectoryNode objects
+        result_nodes: List[DirectoryNode] = []
+        
+        for row in file_rows:
+            # Skip files if not including files
+            if not include_files and row.type not in ["directory"]:
+                continue
+                
+            # Calculate parent path
+            parent_path = os.path.dirname(row.path)
+            if parent_path == ".":
+                parent_path = ""
+                
+            # Determine node type - directory or file
+            node_type = "directory" if row.type == "directory" else "file"
+            
+            # Add to result nodes
+            result_nodes.append(
+                DirectoryNode(
+                    name=row.name,
+                    path=row.path,
+                    type=node_type,
+                    has_children=(node_type == "directory"),  # Directories have children
+                    title=row.title,
+                    permalink=row.permalink,
+                    entity_id=row.entity_id,
+                    entity_type=row.type if node_type == "file" else None,
+                    content_type=row.content_type,
+                    updated_at=row.updated_at,
+                    parent_path=parent_path
+                )
+            )
+        
+        # Sort results: directories first, then alphabetically by name
+        result_nodes.sort(
+            key=lambda x: (
+                0 if x.type == "directory" else 1,  # Directories first
+                x.name.lower()  # Then alphabetically
+            )
+        )
+        
+        return result_nodes
