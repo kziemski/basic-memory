@@ -1,6 +1,6 @@
 """Base repository implementation."""
 
-from typing import Type, Optional, Any, Sequence, TypeVar, List
+from typing import Type, Optional, Any, Sequence, TypeVar, List, Dict
 
 from loguru import logger
 from sqlalchemy import (
@@ -264,13 +264,13 @@ class Repository[T: Base]:
             logger.debug(f"Counted {count} {self.Model.__name__} records")
             return count
 
-    async def execute_query(self, query: Executable, use_query_options: bool = True) -> Result[Any]:
+    async def execute_query(self, query: Executable, params: Optional[Dict[str, Any]] = None,  use_query_options: bool = True) -> Result[Any]:
         """Execute a query asynchronously."""
 
         query = query.options(*self.get_load_options()) if use_query_options else query
-        logger.debug(f"Executing query: {query}")
+        logger.debug(f"Executing query: {query}, params: {params}")
         async with db.scoped_session(self.session_maker) as session:
-            result = await session.execute(query)
+            result = await session.execute(query, params)
             return result
 
     def get_load_options(self) -> List[LoaderOption]:

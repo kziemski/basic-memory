@@ -12,6 +12,7 @@ CREATE VIRTUAL TABLE IF NOT EXISTS search_index USING fts5(
     content_snippet,       -- File content snippet for display
     permalink,             -- Stable identifier (now indexed for path search)
     file_path UNINDEXED,   -- Physical location
+    directory,             -- Directory part of file_path (searchable)
     type UNINDEXED,        -- entity/relation/observation
     
     -- Relation fields 

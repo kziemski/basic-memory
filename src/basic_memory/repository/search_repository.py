@@ -46,6 +46,27 @@ class SearchIndexRow:
     @property
     def content(self):
         return self.content_snippet
+        
+    @property
+    def directory(self) -> str:
+        """Extract directory part from file_path.
+        
+        For a file at "projects/notes/ideas.md", returns "/projects/notes"
+        For a file at root level "README.md", returns "/"
+        """
+        if not self.type == SearchItemType.ENTITY.value and not self.file_path:
+            return ""
+            
+        # Split the path by slashes
+        parts = self.file_path.split("/")
+        
+        # If there's only one part (e.g., "README.md"), it's at the root
+        if len(parts) <= 1:
+            return "/"
+            
+        # Join all parts except the last one (filename)
+        directory_path = "/".join(parts[:-1])
+        return f"/{directory_path}"
 
     def to_insert(self):
         return {
@@ -55,6 +76,7 @@ class SearchIndexRow:
             "content_snippet": self.content_snippet,
             "permalink": self.permalink,
             "file_path": self.file_path,
+            "directory": self.directory if self.type == SearchItemType.ENTITY.value else None,
             "type": self.type,
             "metadata": json.dumps(self.metadata),
             "from_id": self.from_id,
@@ -273,12 +295,12 @@ class SearchRepository:
             await session.execute(
                 text("""
                     INSERT INTO search_index (
-                        id, title, content_stems, content_snippet, permalink, file_path, type, metadata,
+                        id, title, content_stems, content_snippet, permalink, file_path, directory, type, metadata,
                         from_id, to_id, relation_type,
                         entity_id, category,
                         created_at, updated_at
                     ) VALUES (
-                        :id, :title, :content_stems, :content_snippet, :permalink, :file_path, :type, :metadata,
+                        :id, :title, :content_stems, :content_snippet, :permalink, :file_path, :directory, :type, :metadata,
                         :from_id, :to_id, :relation_type,
                         :entity_id, :category,
                         :created_at, :updated_at

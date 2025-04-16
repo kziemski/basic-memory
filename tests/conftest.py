@@ -19,12 +19,15 @@ from basic_memory.models import Base
 from basic_memory.models.knowledge import Entity
 from basic_memory.repository.entity_repository import EntityRepository
 from basic_memory.repository.observation_repository import ObservationRepository
+from basic_memory.repository.project_info_repository import ProjectInfoRepository
 from basic_memory.repository.relation_repository import RelationRepository
 from basic_memory.repository.search_repository import SearchRepository
 from basic_memory.schemas.base import Entity as EntitySchema
 from basic_memory.services import (
     EntityService,
+    ProjectService,
 )
+from basic_memory.services.directory_service import DirectoryService
 from basic_memory.services.file_service import FileService
 from basic_memory.services.link_resolver import LinkResolver
 from basic_memory.services.search_service import SearchService
@@ -32,12 +35,12 @@ from basic_memory.sync.sync_service import SyncService
 from basic_memory.sync.watch_service import WatchService
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 def anyio_backend():
     return "asyncio"
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 def test_config(tmp_path) -> ProjectConfig:
     """Test configuration using in-memory DB."""
     config = ProjectConfig(
@@ -71,6 +74,7 @@ async def session_maker(engine_factory) -> async_sessionmaker[AsyncSession]:
     _, session_maker = engine_factory
     return session_maker
 
+## Repositories
 
 @pytest_asyncio.fixture(scope="function")
 async def entity_repository(session_maker: async_sessionmaker[AsyncSession]) -> EntityRepository:
@@ -93,6 +97,8 @@ async def relation_repository(
     """Create a RelationRepository instance."""
     return RelationRepository(session_maker)
 
+
+## Services
 
 @pytest_asyncio.fixture
 async def entity_service(
@@ -161,6 +167,14 @@ async def sync_service(
 
 
 @pytest_asyncio.fixture
+async def directory_service(entity_repository, test_config) -> DirectoryService:
+    """Create directory service for testing."""
+    return DirectoryService(
+        entity_repository=entity_repository,
+    )
+
+
+@pytest_asyncio.fixture
 async def search_repository(session_maker):
     """Create SearchRepository instance"""
     return SearchRepository(session_maker)
@@ -196,6 +210,21 @@ async def sample_entity(entity_repository: EntityRepository) -> Entity:
         "updated_at": datetime.now(timezone.utc),
     }
     return await entity_repository.create(entity_data)
+
+
+@pytest_asyncio.fixture
+async def project_info_repository(
+    session_maker: async_sessionmaker[AsyncSession],
+):
+    """Dependency for StatsRepository."""
+    return ProjectInfoRepository(session_maker)
+
+@pytest_asyncio.fixture
+async def project_service(
+    project_info_repository: ProjectInfoRepository,
+) -> ProjectService:
+    """Create ProjectService with repository."""
+    return ProjectService(repository=project_info_repository)
 
 
 @pytest_asyncio.fixture
@@ -314,7 +343,7 @@ async def test_graph(
     }
 
 
-@pytest_asyncio.fixture
+@pytest.fixture
 def watch_service(sync_service, file_service, test_config):
     return WatchService(sync_service=sync_service, file_service=file_service, config=test_config)
 
