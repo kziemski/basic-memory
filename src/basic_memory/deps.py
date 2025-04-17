@@ -19,12 +19,14 @@ from basic_memory.repository.project_info_repository import ProjectInfoRepositor
 from basic_memory.repository.relation_repository import RelationRepository
 from basic_memory.repository.search_repository import SearchRepository
 from basic_memory.services import (
-    EntityService,
+    EntityService, ProjectService
 )
 from basic_memory.services.context_service import ContextService
+from basic_memory.services.directory_service import DirectoryService
 from basic_memory.services.file_service import FileService
 from basic_memory.services.link_resolver import LinkResolver
 from basic_memory.services.search_service import SearchService
+from basic_memory.sync import SyncService
 
 
 ## project
@@ -190,3 +192,52 @@ async def get_context_service(
 
 
 ContextServiceDep = Annotated[ContextService, Depends(get_context_service)]
+
+
+async def get_sync_service(
+    entity_service: EntityServiceDep,
+    entity_parser: EntityParserDep,
+    entity_repository: EntityRepositoryDep,
+    relation_repository: RelationRepositoryDep,
+    search_service: SearchServiceDep,
+    file_service: FileServiceDep,
+) -> SyncService:  # pragma: no cover
+    """
+
+    :rtype: object
+    """
+    return SyncService(
+        config=config,
+        entity_service=entity_service,
+        entity_parser=entity_parser,
+        entity_repository=entity_repository,
+        relation_repository=relation_repository,
+        search_service=search_service,
+        file_service=file_service,
+    )
+
+
+SyncServiceDep = Annotated[SyncService, Depends(get_sync_service)]
+
+
+async def get_project_service(
+    project_info_repository: ProjectInfoRepositoryDep,
+) -> ProjectService:
+    """Create ProjectService with repository."""
+    return ProjectService(repository=project_info_repository)
+
+
+ProjectServiceDep = Annotated[ProjectService, Depends(get_project_service)]
+
+
+
+async def get_directory_service(
+    entity_repository: EntityRepositoryDep,
+) -> DirectoryService:
+    """Create DirectoryService with dependencies."""
+    return DirectoryService(
+        entity_repository=entity_repository,
+    )
+
+
+DirectoryServiceDep = Annotated[DirectoryService, Depends(get_directory_service)]
