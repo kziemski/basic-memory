@@ -74,7 +74,9 @@ async def session_maker(engine_factory) -> async_sessionmaker[AsyncSession]:
     _, session_maker = engine_factory
     return session_maker
 
+
 ## Repositories
+
 
 @pytest_asyncio.fixture(scope="function")
 async def entity_repository(session_maker: async_sessionmaker[AsyncSession]) -> EntityRepository:
@@ -99,6 +101,7 @@ async def relation_repository(
 
 
 ## Services
+
 
 @pytest_asyncio.fixture
 async def entity_service(
@@ -218,6 +221,7 @@ async def project_info_repository(
 ):
     """Dependency for StatsRepository."""
     return ProjectInfoRepository(session_maker)
+
 
 @pytest_asyncio.fixture
 async def project_service(

@@ -109,7 +109,6 @@ class ProjectService:
 
         return config_module.config
 
-
     def set_default_project(self, name: str) -> None:
         """Set the default project.
 
@@ -207,7 +206,7 @@ class ProjectService:
         # Find most connected entities (most outgoing relations)
         connected_result = await self.repository.execute_query(
             text("""
-            SELECT e.id, e.title, e.permalink, COUNT(r.id) AS relation_count
+            SELECT e.id, e.title, e.permalink, COUNT(r.id) AS relation_count, file_path
             FROM entity e
             JOIN relation r ON e.id = r.from_id
             GROUP BY e.id
@@ -216,7 +215,13 @@ class ProjectService:
         """)
         )
         most_connected = [
-            {"id": row[0], "title": row[1], "permalink": row[2], "relation_count": row[3]}
+            {
+                "id": row[0],
+                "title": row[1],
+                "permalink": row[2],
+                "relation_count": row[3],
+                "file_path": row[4],
+            }
             for row in connected_result.fetchall()
         ]
 
@@ -252,7 +257,7 @@ class ProjectService:
         # Get recently created entities
         created_result = await self.repository.execute_query(
             text("""
-            SELECT id, title, permalink, entity_type, created_at 
+            SELECT id, title, permalink, entity_type, created_at, file_path 
             FROM entity
             ORDER BY created_at DESC
             LIMIT 10
@@ -265,6 +270,7 @@ class ProjectService:
                 "permalink": row[2],
                 "entity_type": row[3],
                 "created_at": row[4],
+                "file_path": row[5],
             }
             for row in created_result.fetchall()
         ]
@@ -272,7 +278,7 @@ class ProjectService:
         # Get recently updated entities
         updated_result = await self.repository.execute_query(
             text("""
-            SELECT id, title, permalink, entity_type, updated_at 
+            SELECT id, title, permalink, entity_type, updated_at, file_path 
             FROM entity
             ORDER BY updated_at DESC
             LIMIT 10
@@ -285,6 +291,7 @@ class ProjectService:
                 "permalink": row[2],
                 "entity_type": row[3],
                 "updated_at": row[4],
+                "file_path": row[5],
             }
             for row in updated_result.fetchall()
         ]

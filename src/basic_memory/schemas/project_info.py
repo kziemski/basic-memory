@@ -1,4 +1,5 @@
 """Schema for project info response."""
+
 import os
 from datetime import datetime
 from typing import Dict, List, Optional, Any
@@ -130,12 +131,12 @@ class WatchServiceState(BaseModel):
     recent_events: List[WatchEvent] = []  # Use directly with Pydantic model
 
     def add_event(
-            self,
-            path: str,
-            action: str,
-            status: str,
-            checksum: Optional[str] = None,
-            error: Optional[str] = None,
+        self,
+        path: str,
+        action: str,
+        status: str,
+        checksum: Optional[str] = None,
+        error: Optional[str] = None,
     ) -> WatchEvent:
         event = WatchEvent(
             timestamp=datetime.now(),
@@ -158,10 +159,11 @@ class WatchServiceState(BaseModel):
 class ProjectWatchStatus(BaseModel):
     """Project with its watch status."""
 
-
     name: str = Field(..., description="Name of the project")
     path: str = Field(..., description="Path to the project")
-    watch_status: Optional[WatchServiceState] = Field(None, description="Watch status information for the project")
+    watch_status: Optional[WatchServiceState] = Field(
+        None, description="Watch status information for the project"
+    )
 
 
 class ProjectSwitchResponse(BaseModel):

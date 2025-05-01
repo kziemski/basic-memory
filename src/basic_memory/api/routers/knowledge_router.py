@@ -80,7 +80,10 @@ async def create_or_update_entity(
             data_permalink=data.permalink,
             error="Permalink mismatch",
         )
-        raise HTTPException(status_code=400, detail="Entity permalink must match URL path")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Entity permalink {data.permalink} must match URL path: '{permalink}'",
+        )
 
     # Try create_or_update operation
     entity, created = await entity_service.create_or_update_entity(data)

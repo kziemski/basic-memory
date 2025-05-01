@@ -86,13 +86,17 @@ class EntityService(BaseService[EntityModel]):
         """Create new entity or update existing one.
         Returns: (entity, is_new) where is_new is True if a new entity was created
         """
-        logger.debug(f"Creating or updating entity: {schema}")
+        logger.debug(
+            f"Creating or updating entity: {schema.file_path}, permalink: {schema.permalink}"
+        )
 
         # Try to find existing entity using smart resolution
-        existing = await self.link_resolver.resolve_link(schema.permalink or schema.file_path)
+        existing = await self.link_resolver.resolve_link(
+            schema.file_path
+        ) or await self.link_resolver.resolve_link(schema.permalink)
 
         if existing:
-            logger.debug(f"Found existing entity: {existing.permalink}")
+            logger.debug(f"Found existing entity: {existing.file_path}")
             return await self.update_entity(existing, schema), False
         else:
             # Create new entity

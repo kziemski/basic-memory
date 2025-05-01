@@ -133,7 +133,7 @@ class FileService:
                 "Writing file: "
                 f"path={path_obj}, "
                 f"content_length={len(content)}, "
-                f"is_markdown={full_path.suffix.lower() == ".md"}"
+                f"is_markdown={full_path.suffix.lower() == '.md'}"
             )
 
             await file_utils.write_file_atomic(full_path, content)

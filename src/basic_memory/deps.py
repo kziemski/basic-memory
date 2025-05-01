@@ -18,9 +18,7 @@ from basic_memory.repository.observation_repository import ObservationRepository
 from basic_memory.repository.project_info_repository import ProjectInfoRepository
 from basic_memory.repository.relation_repository import RelationRepository
 from basic_memory.repository.search_repository import SearchRepository
-from basic_memory.services import (
-    EntityService, ProjectService
-)
+from basic_memory.services import EntityService, ProjectService
 from basic_memory.services.context_service import ContextService
 from basic_memory.services.directory_service import DirectoryService
 from basic_memory.services.file_service import FileService
@@ -228,7 +226,6 @@ async def get_project_service(
 
 
 ProjectServiceDep = Annotated[ProjectService, Depends(get_project_service)]
-
 
 
 async def get_directory_service(

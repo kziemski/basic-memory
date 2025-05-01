@@ -8,7 +8,15 @@ from loguru import logger
 
 from basic_memory import __version__ as version
 from basic_memory import db
-from basic_memory.api.routers import directory_router, knowledge, management, memory, project, resource, search
+from basic_memory.api.routers import (
+    directory_router,
+    knowledge,
+    management,
+    memory,
+    project,
+    resource,
+    search,
+)
 from basic_memory.config import config as project_config
 from basic_memory.services.initialization import initialize_app
 
@@ -46,6 +54,7 @@ app.include_router(resource.router)
 app.include_router(search.router)
 app.include_router(project.router)
 app.include_router(directory_router.router)
+
 
 @app.exception_handler(Exception)
 async def exception_handler(request, exc):  # pragma: no cover

@@ -13,7 +13,7 @@ async def sync_and_watch(
 
     logger.info(f"Starting watch service to sync file changes in dir: {project_config.home}")
     # full sync
-    await sync_service.sync(project_config.home, show_progress=False)
+    await sync_service.sync(project_config.home)
 
     # watch changes
     await watch_service.run()

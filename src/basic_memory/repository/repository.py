@@ -264,7 +264,12 @@ class Repository[T: Base]:
             logger.debug(f"Counted {count} {self.Model.__name__} records")
             return count
 
-    async def execute_query(self, query: Executable, params: Optional[Dict[str, Any]] = None,  use_query_options: bool = True) -> Result[Any]:
+    async def execute_query(
+        self,
+        query: Executable,
+        params: Optional[Dict[str, Any]] = None,
+        use_query_options: bool = True,
+    ) -> Result[Any]:
         """Execute a query asynchronously."""
 
         query = query.options(*self.get_load_options()) if use_query_options else query
