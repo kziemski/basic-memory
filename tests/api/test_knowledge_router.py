@@ -85,7 +85,27 @@ async def test_create_entity_observations_relations(client: AsyncClient, file_se
 
 
 @pytest.mark.asyncio
-async def test_get_entity(client: AsyncClient):
+async def test_get_entity_by_permalink(client: AsyncClient):
+    """Should retrieve an entity by path ID."""
+    # First create an entity
+    data = {"title": "TestEntity", "folder": "test", "entity_type": "test"}
+    response = await client.post("/knowledge/entities", json=data)
+    assert response.status_code == 200
+    data = response.json()
+
+    # Now get it by permalink
+    permalink = data["permalink"]
+    response = await client.get(f"/knowledge/entities/{permalink}")
+
+    # Verify retrieval
+    assert response.status_code == 200
+    entity = response.json()
+    assert entity["file_path"] == "test/TestEntity.md"
+    assert entity["entity_type"] == "test"
+    assert entity["permalink"] == "test/test-entity"
+
+@pytest.mark.asyncio
+async def test_get_entity_by_file_path(client: AsyncClient):
     """Should retrieve an entity by path ID."""
     # First create an entity
     data = {"title": "TestEntity", "folder": "test", "entity_type": "test"}
@@ -94,8 +114,8 @@ async def test_get_entity(client: AsyncClient):
     data = response.json()
 
     # Now get it by path
-    permalink = data["permalink"]
-    response = await client.get(f"/knowledge/entities/{permalink}")
+    file_path = data["file_path"]
+    response = await client.get(f"/knowledge/entities/{file_path}")
 
     # Verify retrieval
     assert response.status_code == 200
@@ -177,10 +197,12 @@ async def test_delete_single_entity(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_delete_single_entity_by_title(client: AsyncClient):
-    """Test DELETE /knowledge/entities with path ID."""
+    """Test DELETE /knowledge/entities with file path."""
     # Create test entity
     entity_data = {"title": "TestEntity", "folder": "", "entity_type": "test"}
-    await client.post("/knowledge/entities", json=entity_data)
+    response = await client.post("/knowledge/entities", json=entity_data)
+    assert response.status_code == 200
+    data = response.json()
 
     # Test deletion
     response = await client.delete("/knowledge/entities/TestEntity")
@@ -188,8 +210,8 @@ async def test_delete_single_entity_by_title(client: AsyncClient):
     assert response.json() == {"deleted": True}
 
     # Verify entity is gone
-    permalink = quote("test/TestEntity")
-    response = await client.get(f"/knowledge/entities/{permalink}")
+    file_path = quote(data["file_path"])
+    response = await client.get(f"/knowledge/entities/{file_path}")
     assert response.status_code == 404
 
 
