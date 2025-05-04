@@ -16,6 +16,7 @@ from basic_memory.api.routers import (
     project,
     resource,
     search,
+    prompt_router,
 )
 from basic_memory.config import config as project_config
 from basic_memory.services.initialization import initialize_app
@@ -54,6 +55,7 @@ app.include_router(resource.router)
 app.include_router(search.router)
 app.include_router(project.router)
 app.include_router(directory_router.router)
+app.include_router(prompt_router.router)
 
 
 @app.exception_handler(Exception)

@@ -122,5 +122,5 @@ class GraphContext(BaseModel):
     # Context metadata
     metadata: MemoryMetadata
 
-    page: int = 1
-    page_size: int = 1
+    page: Optional[int]
+    page_size: Optional[int]

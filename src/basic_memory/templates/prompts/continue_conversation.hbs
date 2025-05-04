@@ -1,0 +1,61 @@
+# Continuing conversation on: {{ topic }}
+
+This is a memory retrieval session. 
+
+Please use the available basic-memory tools to gather relevant context before responding. 
+Start by executing one of the suggested commands below to retrieve content.
+
+Here's what I found from previous conversations:
+
+> **Knowledge Capture Recommendation:** As you continue this conversation, actively look for opportunities to record new information, decisions, or insights that emerge. Use `write_note()` to document important context.
+
+{{#if has_results}}
+{{#each results}}
+    {{#each primary_results}}
+        --- memory://{{ permalink }}
+    
+        ## {{ title }}
+        - **Type**: {{ type }}
+        - **Created**: {{date created_at "%Y-%m-%d %H:%M"}}
+        
+        {{#if content}}
+        **Excerpt**:
+        {{ content }}
+        {{/if}}
+
+        You can read this document with: `read_note("{{ permalink }}")`
+    {{/each}}
+
+    {{#if (size related_results)}}
+    ## Related Context
+    {{#each related_results}}
+        - type: **{{ type }}**
+        - title: {{ title }}
+        {{#if permalink}}
+        You can view this document with: `read_note("{{ permalink }}")`
+        {{else}}
+        You can view this file with: `read_file("{{ file_path }}")`
+        {{/if}}
+    {{/each}}
+    {{/if}}
+{{/each}}
+{{else}}
+No results found for this topic. This is an excellent chance to start documenting this topic.
+{{/if}}
+
+## Next Steps
+
+You can:
+- Explore more with: `search_notes({"text": "{{ topic }}"})`
+- See what's changed: `recent_activity(timeframe="{{default timeframe "7d"}}")`
+- **Record new learnings or decisions from this conversation:** `write_note(title="[Create a meaningful title]", content="[Content with observations and relations]")`
+
+## Knowledge Capture Recommendation
+
+As you continue this conversation, **actively look for opportunities to:**
+1. Record key information, decisions, or insights that emerge
+2. Link new knowledge to existing topics 
+3. Suggest capturing important context when appropriate
+4. Create forward references to topics that might be created later
+
+Remember that capturing knowledge during conversations is one of the most valuable aspects of Basic Memory.

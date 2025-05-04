@@ -1,9 +1,13 @@
 """Router for search operations."""
+from typing import List
 
 from fastapi import APIRouter, BackgroundTasks
 
+from basic_memory.api.routers.utils import to_search_results
+from basic_memory.repository.search_repository import SearchIndexRow
 from basic_memory.schemas.search import SearchQuery, SearchResult, SearchResponse
 from basic_memory.deps import SearchServiceDep, EntityServiceDep
+from basic_memory.services import EntityService
 
 router = APIRouter(prefix="/search", tags=["search"])
 
@@ -20,31 +24,13 @@ async def search(
     limit = page_size
     offset = (page - 1) * page_size
     results = await search_service.search(query, limit=limit, offset=offset)
-
-    search_results = []
-    for r in results:
-        entities = await entity_service.get_entities_by_id([r.entity_id, r.from_id, r.to_id])  # pyright: ignore
-        search_results.append(
-            SearchResult(
-                title=r.title,  # pyright: ignore
-                type=r.type,  # pyright: ignore
-                permalink=r.permalink,
-                score=r.score,  # pyright: ignore
-                entity=entities[0].permalink if entities else None,
-                content=r.content,
-                file_path=r.file_path,
-                metadata=r.metadata,
-                category=r.category,
-                from_entity=entities[0].permalink if entities else None,
-                to_entity=entities[1].permalink if len(entities) > 1 else None,
-                relation_type=r.relation_type,
-            )
-        )
+    search_results = await to_search_results(entity_service, results)
     return SearchResponse(
         results=search_results,
         current_page=page,
         page_size=page_size,
     )
+
 
 
 @router.post("/reindex")
