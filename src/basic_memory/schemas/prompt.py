@@ -22,7 +22,7 @@ class ContinueConversationRequest(BaseModel):
     """
     
     topic: Optional[str] = Field(None, description="Topic or keyword to search for")
-    timeframe: Optional[TimeFrame] = Field("7d", description="How far back to look for activity (e.g. '1d', '1 week')")
+    timeframe: TimeFrame = Field("7d", description="How far back to look for activity (e.g. '1d', '1 week')")
     depth: int = 1
     related_items_limit: int = 2
 

@@ -149,3 +149,34 @@ async def test_extension_handling(custom_template_loader, temp_template_dir):
     
     result = await custom_template_loader.render("liquid_template.liquid", {"value": "converted"})
     assert result == "Liquid template: converted"
+
+
+@pytest.mark.asyncio
+async def test_dedent_helper(custom_template_loader, temp_template_dir):
+    """Test the dedent helper for text blocks."""
+    dedent_path = temp_template_dir / "dedent.hbs"
+    
+    # Create a template with indented text blocks
+    template_content = """Before
+{{#dedent}}
+    This is indented text
+        with nested indentation
+    that should be dedented
+    while preserving relative indentation
+{{/dedent}}
+After"""
+
+    dedent_path.write_text(template_content, encoding="utf-8")
+    
+    # Render the template
+    result = await custom_template_loader.render("dedent.hbs", {})
+    
+    # Check that the common leading whitespace is removed but relative indentation is preserved
+    expected = """Before
+This is indented text
+    with nested indentation
+that should be dedented
+while preserving relative indentation
+After"""
+    
+    assert result == expected

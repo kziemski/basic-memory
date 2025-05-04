@@ -12,6 +12,7 @@ Here's what I found from previous conversations:
 {{#if has_results}}
 {{#each results}}
     {{#each primary_results}}
+        {{#dedent}}
         --- memory://{{ permalink }}
     
         ## {{ title }}
@@ -24,11 +25,16 @@ Here's what I found from previous conversations:
         {{/if}}
 
         You can read this document with: `read_note("{{ permalink }}")`
+        {{/dedent}}
     {{/each}}
 
     {{#if (size related_results)}}
+    {{#dedent}}
     ## Related Context
+    {{/dedent}}
     {{#each related_results}}
+
+        {{#dedent}}
         - type: **{{ type }}**
         - title: {{ title }}
         {{#if permalink}}
@@ -36,6 +42,7 @@ Here's what I found from previous conversations:
         {{else}}
         You can view this file with: `read_file("{{ file_path }}")`
         {{/if}}
+        {{/dedent}}
     {{/each}}
     {{/if}}
 {{/each}}

@@ -52,22 +52,22 @@ def context_without_results():
         "results": []
     }
 
-
+@pytest.mark.asyncio
 async def test_search_with_results(template_loader, context_with_results):
     """Test rendering the search template with results."""
     result = await template_loader.render("prompts/search.hbs", context_with_results)
     
     # Check that key elements are present
     assert "Search Results for: \"test query\" (after 30d)" in result
-    assert "1. Test Search Result" in result
-    assert "Type: ENTITY" in result
-    assert "Relevance Score: 0.95" in result
+    assert "1.0. Test Search Result" in result
+    assert "Type**: entity" in result
+    assert "Relevance Score**: 0.95" in result
     assert "This is a test search result with some content." in result
     assert "read_note(\"test/search-result\")" in result
     assert "Next Steps" in result
     assert "Synthesize and Capture Knowledge" in result
 
-
+@pytest.mark.asyncio
 async def test_search_without_results(template_loader, context_without_results):
     """Test rendering the search template without results."""
     result = await template_loader.render("prompts/search.hbs", context_without_results)
@@ -80,7 +80,7 @@ async def test_search_without_results(template_loader, context_without_results):
     assert "title=\"Empty query\"" in result
     assert "Other Suggestions" in result
 
-
+@pytest.mark.asyncio
 async def test_multiple_search_results(template_loader):
     """Test rendering the search template with multiple results."""
     # Create multiple search results
@@ -108,11 +108,11 @@ async def test_multiple_search_results(template_loader):
     
     # Check that all results are rendered
     for i in range(1, 6):
-        assert f"{i}. Search Result {i}" in result
+        assert f"{i}.0. Search Result {i}" in result
         assert f"Content for result {i}" in result
         assert f"read_note(\"test/result-{i}\")" in result
 
-
+@pytest.mark.asyncio
 async def test_capitalization_in_write_note_template(template_loader, context_with_results):
     """Test that the query is capitalized in the write_note template."""
     result = await template_loader.render("prompts/search.hbs", context_with_results)
@@ -120,7 +120,7 @@ async def test_capitalization_in_write_note_template(template_loader, context_wi
     # The query should be capitalized in the suggested write_note call
     assert "Synthesis of Test query Information" in result
 
-
+@pytest.mark.asyncio
 async def test_timeframe_display(template_loader):
     """Test that the timeframe is displayed correctly when present, and not when absent."""
     # Context with timeframe

@@ -84,7 +84,7 @@ async def test_search_prompt_with_timeframe(client, test_graph):
     result = await search_prompt("Root", timeframe="1w")
 
     # Check the response includes timeframe information
-    assert 'Search Results for: "Root" (after 1w)' in result
+    assert 'Search Results for: "Root" (after 7d)' in result
     assert "I found " in result
 
 

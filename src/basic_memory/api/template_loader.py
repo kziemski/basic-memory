@@ -6,6 +6,7 @@ formatting needs.
 """
 
 import os
+import textwrap
 from typing import Dict, Any, Optional, List, Callable
 from pathlib import Path
 import json
@@ -164,6 +165,35 @@ def _if_cond_helper(this, options, condition):
     return ""
 
 
+def _dedent_helper(this, options):
+    """Dedent a block of text to remove common leading whitespace.
+    
+    Usage:
+    {{#dedent}}
+        This text will have its
+        common leading whitespace removed
+        while preserving relative indentation.
+    {{/dedent}}
+    """
+    if 'fn' not in options:
+        return ""
+    
+    # Get the content from the block
+    content = options['fn'](this)
+    
+    # Convert to string if it's a strlist
+    if isinstance(content, list) or hasattr(content, '__iter__') and not isinstance(content, (str, bytes)):
+        content_str = ''.join(str(item) for item in content)
+    else:
+        content_str = str(content)
+    
+    # Use textwrap to dedent the content
+    dedented = textwrap.dedent(content_str)
+    
+    # Return as a SafeString to prevent HTML escaping
+    return pybars.strlist([dedented])
+
+
 class TemplateLoader:
     """Loader for Handlebars templates.
     
@@ -192,6 +222,7 @@ class TemplateLoader:
             "math": _math_helper,
             "lt": _lt_helper,
             "if_cond": _if_cond_helper,
+            "dedent": _dedent_helper,
         }
         
         logger.debug(f"Initialized template loader with directory: {self.template_dir}")

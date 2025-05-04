@@ -1,201 +1,163 @@
 """Tests for the prompt router endpoints."""
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+import pytest_asyncio
 import datetime
 from dateutil import parser
 from fastapi import FastAPI
-from fastapi.testclient import TestClient
+from httpx import AsyncClient
 
 from basic_memory.api.routers.prompt_router import router
 from basic_memory.schemas.memory import EntitySummary, GraphContext
 from basic_memory.schemas.search import SearchItemType, SearchResult, SearchResponse
 from basic_memory.schemas.prompt import ContinueConversationRequest, SearchPromptRequest
+from basic_memory.services.context_service import ContextService
+from basic_memory.api.template_loader import TemplateLoader
 
 
-@pytest.fixture
-def app():
-    """Create a FastAPI app with the prompt router for testing."""
-    app = FastAPI()
-    app.include_router(router)
-    return app
+@pytest_asyncio.fixture
+async def context_service(entity_repository, search_service):
+    """Create a real context service for testing."""
+    return ContextService(entity_repository, search_service)
 
 
-@pytest.fixture
-def client(app):
-    """Create a test client for the FastAPI app."""
-    return TestClient(app)
-
-
-@pytest.fixture
-def mock_search_service():
-    """Create a mock search_service for testing."""
-    mock = AsyncMock()
-    # Set up mock return values as needed
-    return mock
-
-
-@pytest.fixture
-def mock_entity_service():
-    """Create a mock entity_service for testing."""
-    mock = AsyncMock()
-    # Set up mock return values as needed
-    return mock
-
-
-@pytest.fixture
-def mock_context_service():
-    """Create a mock context_service for testing."""
-    mock = AsyncMock()
-    # Set up mock return values as needed
-    return mock
-
-
-@pytest.fixture
-def mock_entity_repository():
-    """Create a mock entity_repository for testing."""
-    mock = AsyncMock()
-    # Set up mock return values as needed
-    return mock
-
-
-@pytest.fixture
-def mock_template_loader():
-    """Create a mock template_loader for testing."""
-    mock = AsyncMock()
-    # Set up mock return values
-    mock.render.return_value = "Mocked template rendering"
-    return mock
-
-
-def test_continue_conversation_endpoint(client, monkeypatch, mock_search_service, 
-                                        mock_entity_service, mock_context_service, 
-                                        mock_entity_repository, mock_template_loader):
-    """Test the continue_conversation endpoint with a mock template loader."""
-    # Create test data
-    test_entity = EntitySummary(
-        title="Test Entity",
-        permalink="test/entity",
-        type=SearchItemType.ENTITY,
-        content="Test content",
-        file_path="/path/to/test.md",
-        created_at=datetime.datetime.now()
-    )
-    
-    # Set up mock returns
-    mock_context_service.build_context.return_value = {
-        "primary_results": [test_entity],
-        "related_results": [],
-        "metadata": {}
+@pytest.mark.asyncio
+async def test_continue_conversation_endpoint(
+    client: AsyncClient,
+    entity_service,
+    search_service,
+    context_service,
+    entity_repository,
+    test_graph
+):
+    """Test the continue_conversation endpoint with real services."""
+    # Create request data
+    request_data = {
+        "topic": "Root",  # This should match our test entity in test_graph
+        "timeframe": "7d",
+        "depth": 1,
+        "related_items_limit": 2
     }
     
-    # Patch the dependencies
-    monkeypatch.setattr("basic_memory.api.routers.prompt_router.template_loader", mock_template_loader)
-    monkeypatch.setattr("basic_memory.deps.get_search_service", lambda: mock_search_service)
-    monkeypatch.setattr("basic_memory.deps.get_entity_service", lambda: mock_entity_service)
-    monkeypatch.setattr("basic_memory.deps.get_context_service", lambda: mock_context_service)
-    monkeypatch.setattr("basic_memory.deps.get_entity_repository", lambda: mock_entity_repository)
+    # Call the endpoint
+    response = await client.post("/prompt/continue-conversation", json=request_data)
     
-    # Test with topic
-    response = client.post(
-        "/prompt/continue-conversation",
-        json={"topic": "test topic", "timeframe": "7d", "depth": 1, "related_items_limit": 2}
-    )
+    # Verify response
+    assert response.status_code == 200
+    result = response.json()
+    assert "prompt" in result
+    assert "context" in result
+    
+    # Check content of context
+    context = result["context"]
+    assert context["topic"] == "Root"
+    assert context["timeframe"] == "7d"
+    assert context["has_results"] is True
+    assert len(context["results"]) > 0
+    
+    # Check content of prompt
+    prompt = result["prompt"]
+    assert "Continuing conversation on: Root" in prompt
+    assert "memory retrieval session" in prompt
+    
+    # Test without topic - should use recent activity
+    request_data = {
+        "timeframe": "1d",
+        "depth": 1,
+        "related_items_limit": 2
+    }
+    
+    response = await client.post("/prompt/continue-conversation", json=request_data)
     
     assert response.status_code == 200
-    assert "prompt" in response.json()
-    assert "context" in response.json()
+    result = response.json()
+    assert "Recent Activity" in result["context"]["topic"]
+
+
+@pytest.mark.asyncio
+async def test_search_prompt_endpoint(
+    client: AsyncClient,
+    entity_service,
+    search_service,
+    test_graph
+):
+    """Test the search_prompt endpoint with real services."""
+    # Create request data
+    request_data = {
+        "query": "Root",  # This should match our test entity
+        "timeframe": "7d"
+    }
     
-    # Verify the template was rendered with the correct parameters
-    mock_template_loader.render.assert_called_once()
-    template_path = mock_template_loader.render.call_args[0][0]
-    template_context = mock_template_loader.render.call_args[0][1]
+    # Call the endpoint
+    response = await client.post("/prompt/search", json=request_data)
     
-    assert template_path == "prompts/continue_conversation.hbs"
-    assert template_context["topic"] == "test topic"
-    assert template_context["timeframe"] == "7d"
-    
-    # Reset mocks for next test
-    mock_template_loader.render.reset_mock()
-    
-    # Test without topic - should get recent activity
-    response = client.post(
-        "/prompt/continue-conversation",
-        json={"timeframe": "1d", "depth": 1, "related_items_limit": 2}
-    )
-    
+    # Verify response
     assert response.status_code == 200
-    assert "prompt" in response.json()
-    assert "context" in response.json()
+    result = response.json()
+    assert "prompt" in result
+    assert "context" in result
     
-    # Verify different context building flow was used for recent activity
-    template_context = mock_template_loader.render.call_args[0][1]
-    assert "Recent Activity" in template_context["topic"]
-    assert template_context["timeframe"] == "1d"
+    # Check content of context
+    context = result["context"]
+    assert context["query"] == "Root"
+    assert context["timeframe"] == "7d"
+    assert context["has_results"] is True
+    assert len(context["results"]) > 0
+    
+    # Check content of prompt
+    prompt = result["prompt"]
+    assert "Search Results for: \"Root\"" in prompt
+    assert "This is a memory search session" in prompt
 
 
-def test_search_prompt_endpoint(client, monkeypatch, mock_search_service, 
-                               mock_entity_service, mock_template_loader):
-    """Test the search_prompt endpoint with a mock template loader."""
-    # Create test data
-    test_result = SearchResult(
-        title="Test Result",
-        type=SearchItemType.ENTITY,
-        permalink="test/result",
-        score=0.95,
-        content="Test content",
-        file_path="/path/to/test.md",
-        metadata={}
-    )
+@pytest.mark.asyncio
+async def test_search_prompt_no_results(
+    client: AsyncClient,
+    entity_service,
+    search_service
+):
+    """Test the search_prompt endpoint with a query that returns no results."""
+    # Create request data with a query that shouldn't match anything
+    request_data = {
+        "query": "NonExistentQuery12345",
+        "timeframe": "7d"
+    }
     
-    # Set up mock returns
-    mock_search_service.search.return_value = [test_result]
+    # Call the endpoint
+    response = await client.post("/prompt/search", json=request_data)
     
-    # Patch the dependencies
-    monkeypatch.setattr("basic_memory.api.routers.prompt_router.template_loader", mock_template_loader)
-    monkeypatch.setattr("basic_memory.deps.get_search_service", lambda: mock_search_service)
-    monkeypatch.setattr("basic_memory.deps.get_entity_service", lambda: mock_entity_service)
-    monkeypatch.setattr("basic_memory.api.routers.utils.to_search_results", 
-                       AsyncMock(return_value=[test_result]))
-    
-    # Test the endpoint
-    response = client.post(
-        "/prompt/search",
-        json={"query": "test search", "timeframe": "7d"}
-    )
-    
+    # Verify response
     assert response.status_code == 200
-    assert "prompt" in response.json()
-    assert "context" in response.json()
+    result = response.json()
     
-    # Verify the template was rendered with the correct parameters
-    mock_template_loader.render.assert_called_once()
-    template_path = mock_template_loader.render.call_args[0][0]
-    template_context = mock_template_loader.render.call_args[0][1]
+    # Check content of context
+    context = result["context"]
+    assert context["query"] == "NonExistentQuery12345"
+    assert context["has_results"] is False
+    assert len(context["results"]) == 0
     
-    assert template_path == "prompts/search.hbs"
-    assert template_context["query"] == "test search"
-    assert template_context["timeframe"] == "7d"
-    assert template_context["has_results"] is True
-    assert len(template_context["results"]) == 1
+    # Check content of prompt
+    prompt = result["prompt"]
+    assert "Search Results for: \"NonExistentQuery12345\"" in prompt
+    assert "I couldn't find any results for this query" in prompt
+    assert "Opportunity to Capture Knowledge" in prompt
 
 
-def test_error_handling(client, monkeypatch, mock_search_service,
-                       mock_entity_service, mock_context_service,
-                       mock_entity_repository, mock_template_loader):
-    """Test error handling in the endpoints."""
-    # Simulate a template rendering error
-    mock_template_loader.render.side_effect = Exception("Template error")
+@pytest.mark.asyncio
+async def test_error_handling(
+    client: AsyncClient,
+    monkeypatch
+):
+    """Test error handling in the endpoints by breaking the template loader."""
+    # Patch the template loader to raise an exception
+    def mock_render(*args, **kwargs):
+        raise Exception("Template error")
     
-    # Patch the dependencies
-    monkeypatch.setattr("basic_memory.api.routers.prompt_router.template_loader", mock_template_loader)
-    monkeypatch.setattr("basic_memory.deps.get_search_service", lambda: mock_search_service)
-    monkeypatch.setattr("basic_memory.deps.get_entity_service", lambda: mock_entity_service)
-    monkeypatch.setattr("basic_memory.deps.get_context_service", lambda: mock_context_service)
-    monkeypatch.setattr("basic_memory.deps.get_entity_repository", lambda: mock_entity_repository)
+    # Apply the patch
+    monkeypatch.setattr("basic_memory.api.template_loader.TemplateLoader.render", mock_render)
     
     # Test continue_conversation error handling
-    response = client.post(
+    response = await client.post(
         "/prompt/continue-conversation",
         json={"topic": "test error", "timeframe": "7d"}
     )
@@ -205,7 +167,7 @@ def test_error_handling(client, monkeypatch, mock_search_service,
     assert "Template error" in response.json()["detail"]
     
     # Test search_prompt error handling
-    response = client.post(
+    response = await client.post(
         "/prompt/search",
         json={"query": "test error", "timeframe": "7d"}
     )
