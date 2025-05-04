@@ -19,81 +19,149 @@ TEMPLATES_DIR = Path(__file__).parent.parent / "templates"
 
 
 # Custom helpers for Handlebars
-def _date_helper(context, options, timestamp, format_str="%Y-%m-%d %H:%M"):
+def _date_helper(this, *args):
     """Format a date using the given format string."""
+    if len(args) < 1:
+        return ""
+    
+    timestamp = args[0]
+    format_str = args[1] if len(args) > 1 else "%Y-%m-%d %H:%M"
+    
     if hasattr(timestamp, "strftime"):
-        return timestamp.strftime(format_str)
+        result = timestamp.strftime(format_str)
     elif isinstance(timestamp, str):
         try:
             dt = datetime.datetime.fromisoformat(timestamp)
-            return dt.strftime(format_str)
+            result = dt.strftime(format_str)
         except ValueError:
-            return timestamp
-    return str(timestamp)
+            result = timestamp
+    else:
+        result = str(timestamp)
+        
+    return pybars.strlist([result])
 
 
-def _default_helper(context, value, default_value):
+def _default_helper(this, *args):
     """Return a default value if the given value is None or empty."""
-    if value is None or value == "":
-        return default_value
-    return value
-
-
-def _capitalize_helper(context, options, text):
-    """Capitalize the first letter of a string."""
-    if not text or not isinstance(text, str):
+    if len(args) < 2:
         return ""
-    return text.capitalize()
+    
+    value = args[0]
+    default_value = args[1]
+    
+    result = default_value if value is None or value == "" else value
+    # Use strlist for consistent handling of HTML escaping
+    return pybars.strlist([str(result)])
 
 
-def _round_helper(context, options, value, decimal_places=2):
+def _capitalize_helper(this, *args):
+    """Capitalize the first letter of a string."""
+    if len(args) < 1:
+        return ""
+    
+    text = args[0]
+    if not text or not isinstance(text, str):
+        result = ""
+    else:
+        result = text.capitalize()
+        
+    return pybars.strlist([result])
+
+
+def _round_helper(this, *args):
     """Round a number to the specified number of decimal places."""
+    if len(args) < 1:
+        return ""
+    
+    value = args[0]
+    decimal_places = args[1] if len(args) > 1 else 2
+    
     try:
-        return round(float(value), int(decimal_places))
+        result = str(round(float(value), int(decimal_places)))
     except (ValueError, TypeError):
-        return value
+        result = str(value)
+        
+    return pybars.strlist([result])
 
 
-def _size_helper(context, options, value):
+def _size_helper(this, *args):
     """Return the size/length of a collection."""
-    if value is None:
+    if len(args) < 1:
         return 0
-    if isinstance(value, (list, tuple, dict, str)):
-        return len(value)
-    return 0
+    
+    value = args[0]
+    if value is None:
+        result = "0"
+    elif isinstance(value, (list, tuple, dict, str)):
+        result = str(len(value))
+    else:
+        result = "0"
+        
+    return pybars.strlist([result])
 
 
-def _json_helper(context, options, value):
+def _json_helper(this, *args):
     """Convert a value to a JSON string."""
-    return json.dumps(value)
+    if len(args) < 1:
+        return "{}"
+    
+    value = args[0]
+    # For pybars, we need to return a SafeString to prevent HTML escaping
+    result = json.dumps(value)
+    # Safe string implementation to prevent HTML escaping
+    return pybars.strlist([result])
 
 
-def _math_helper(context, options, lhs, operator, rhs):
+def _math_helper(this, *args):
     """Perform basic math operations."""
+    if len(args) < 3:
+        return pybars.strlist(["Math error: Insufficient arguments"])
+    
+    lhs = args[0]
+    operator = args[1]
+    rhs = args[2]
+    
     try:
         lhs = float(lhs)
         rhs = float(rhs)
         if operator == "+":
-            return lhs + rhs
+            result = str(lhs + rhs)
         elif operator == "-":
-            return lhs - rhs
+            result = str(lhs - rhs)
         elif operator == "*":
-            return lhs * rhs
+            result = str(lhs * rhs)
         elif operator == "/":
-            return lhs / rhs
+            result = str(lhs / rhs)
         else:
-            return f"Unsupported operator: {operator}"
+            result = f"Unsupported operator: {operator}"
     except (ValueError, TypeError) as e:
-        return f"Math error: {e}"
+        result = f"Math error: {e}"
+        
+    return pybars.strlist([result])
 
 
-def _lt_helper(context, options, lhs, rhs):
+def _lt_helper(this, *args):
     """Check if left hand side is less than right hand side."""
+    if len(args) < 2:
+        return False
+    
+    lhs = args[0]
+    rhs = args[1]
+    
     try:
         return float(lhs) < float(rhs)
     except (ValueError, TypeError):
         # Fall back to string comparison for non-numeric values
         return str(lhs) < str(rhs)
+        
+        
+def _if_cond_helper(this, options, condition):
+    """Block helper for custom if conditionals."""
+    if condition:
+        return options['fn'](this)
+    elif 'inverse' in options:
+        return options['inverse'](this)
+    return ""
 
 
 class TemplateLoader:
@@ -123,6 +191,7 @@ class TemplateLoader:
             "json": _json_helper,
             "math": _math_helper,
             "lt": _lt_helper,
+            "if_cond": _if_cond_helper,
         }
         
         logger.debug(f"Initialized template loader with directory: {self.template_dir}")
@@ -153,7 +222,7 @@ class TemplateLoader:
         if not full_path.exists():
             raise FileNotFoundError(f"Template not found: {full_path}")
         
-        with open(full_path, 'r') as f:
+        with open(full_path, 'r', encoding='utf-8') as f:
             template_str = f.read()
             
         template = self.compiler.compile(template_str)
