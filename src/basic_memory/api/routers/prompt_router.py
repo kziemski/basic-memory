@@ -50,7 +50,7 @@ async def continue_conversation(
         f"Generating continue conversation prompt, topic: {request.topic}, timeframe: {request.timeframe}"
     )
 
-    since = parse(request.timeframe)
+    since = parse(request.timeframe) if request.timeframe else None
 
     # Get data needed for template
     if request.topic:

@@ -2,49 +2,50 @@
 
 This is a memory retrieval session. 
 
-Please use the available basic-memory tools to gather relevant context before responding. 
-Start by executing one of the suggested commands below to retrieve content.
-
-Here's what I found from previous conversations:
+Please use the available basic-memory tools to gather relevant context before responding. Start by executing one of the suggested commands below to retrieve content.
 
 > **Knowledge Capture Recommendation:** As you continue this conversation, actively look for opportunities to record new information, decisions, or insights that emerge. Use `write_note()` to document important context.
 
+Here's what I found from previous conversations:
+
+
 {{#if has_results}}
 {{#each results}}
-    {{#each primary_results}}
-        {{#dedent}}
-        --- memory://{{ permalink }}
-    
-        ## {{ title }}
-        - **Type**: {{ type }}
-        - **Created**: {{date created_at "%Y-%m-%d %H:%M"}}
-        
-        {{#if content}}
-        **Excerpt**:
-        {{ content }}
-        {{/if}}
+{{#each primary_results}}
+<memory>
+--- memory://{{ permalink }}
 
-        You can read this document with: `read_note("{{ permalink }}")`
-        {{/dedent}}
-    {{/each}}
+## {{ title }}
+- **Type**: {{ type }}
+- **Created**: {{date created_at "%Y-%m-%d %H:%M"}}
 
-    {{#if (size related_results)}}
-    {{#dedent}}
-    ## Related Context
-    {{/dedent}}
-    {{#each related_results}}
+{{#if content}}
+**Excerpt**:
+<excerpt>
+{{ content }}
+</excerpt>
+{{/if}}
+You can read this document with: `read_note("{{ permalink }}")`
+</memory>
+{{/each}}
 
-        {{#dedent}}
-        - type: **{{ type }}**
-        - title: {{ title }}
-        {{#if permalink}}
-        You can view this document with: `read_note("{{ permalink }}")`
-        {{else}}
-        You can view this file with: `read_file("{{ file_path }}")`
-        {{/if}}
-        {{/dedent}}
-    {{/each}}
-    {{/if}}
+{{#if (size related_results)}}
+## Related Context
+
+{{#each related_results}}
+<related>
+- type: **{{ type }}**
+- title: {{ title }}
+
+{{#if permalink}}
+You can view this document with: `read_note("{{ permalink }}")`
+{{else}}
+You can view this file with: `read_file("{{ file_path }}")`
+{{/if}}
+</related>
+
+{{/each}}
+{{/if}}
 {{/each}}
 {{else}}
 The supplied query did not return any information specifically on this topic.
@@ -57,22 +58,22 @@ This is an excellent chance to start documenting this topic:
 await write_note(
     title="{{ topic }}",
     content=f'''
-    # {{ topic }}
+# {{ topic }}
 
-    ## Overview
-    [Summary of what we know about {{ topic }}]
+## Overview
+[Summary of what we know about {{ topic }}]
 
-    ## Key Points
-    [Main aspects or components of {{ topic }}]
+## Key Points
+[Main aspects or components of {{ topic }}]
 
-    ## Observations
-    - [category] [First important observation about {{ topic }}]
-    - [category] [Second observation about {{ topic }}]
+## Observations
+- [category] [First important observation about {{ topic }}]
+- [category] [Second observation about {{ topic }}]
 
-    ## Relations
-    - relates_to [[Related Topic]]
-    - part_of [[Broader Context]]
-    '''
+## Relations
+- relates_to [[Related Topic]]
+- part_of [[Broader Context]]
+'''
 )
 ```
 
@@ -82,8 +83,6 @@ Please use the available basic-memory tools to gather relevant context before re
 You can also:
 - Try a different search term
 - Check recent activity with `recent_activity(timeframe="1w")`
-
-
 {{/if}}
 
 ## Next Steps

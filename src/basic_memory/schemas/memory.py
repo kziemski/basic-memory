@@ -100,7 +100,7 @@ class MemoryMetadata(BaseModel):
     uri: Optional[str] = None
     types: Optional[List[SearchItemType]] = None
     depth: int
-    timeframe: str
+    timeframe: Optional[str] = None
     generated_at: datetime
     total_results: int
     total_relations: int

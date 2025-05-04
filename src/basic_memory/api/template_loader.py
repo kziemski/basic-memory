@@ -187,8 +187,12 @@ def _dedent_helper(this, options):
     else:
         content_str = str(content)
     
-    # Use textwrap to dedent the content
-    dedented = textwrap.dedent(content_str)
+    # Add trailing and leading newlines to ensure proper dedenting
+    # This is critical for textwrap.dedent to work correctly with mixed content
+    content_str = "\n" + content_str + "\n"
+    
+    # Use textwrap to dedent the content and remove the extra newlines we added
+    dedented = textwrap.dedent(content_str)[1:-1]
     
     # Return as a SafeString to prevent HTML escaping
     return pybars.strlist([dedented])
