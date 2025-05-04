@@ -32,7 +32,7 @@ def _date_helper(context, options, timestamp, format_str="%Y-%m-%d %H:%M"):
     return str(timestamp)
 
 
-def _default_helper(context, options, value, default_value):
+def _default_helper(context, value, default_value):
     """Return a default value if the given value is None or empty."""
     if value is None or value == "":
         return default_value

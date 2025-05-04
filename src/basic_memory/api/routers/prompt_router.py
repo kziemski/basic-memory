@@ -1,6 +1,6 @@
 """Router for prompt-related operations.
 
-This router is responsible for rendering various prompts using Liquid templates.
+This router is responsible for rendering various prompts using Handlebars templates.
 It centralizes all prompt formatting logic that was previously in the MCP prompts.
 """
 
@@ -16,6 +16,7 @@ from basic_memory.deps import (
     SearchServiceDep,
     EntityServiceDep,
 )
+from pathlib import Path
 from basic_memory.schemas.prompt import (
     ContinueConversationRequest,
     SearchPromptRequest,
@@ -95,16 +96,19 @@ async def continue_conversation(
         )
         recent_context = await to_graph_context(context, entity_repository=entity_repository)
 
+        has_results = len(recent_context.primary_results) > 0
+        primary_results = recent_context.primary_results[:5]
+        related_results = recent_context.related_results[:2]
         template_context = {
             "topic": f"Recent Activity from ({request.timeframe})",
             "timeframe": request.timeframe,
             "results": [
                 {
-                    "primary_results": recent_context.primary_results[:5],
-                    "related_results": recent_context.related_results[:2],
+                    "primary_results": primary_results,
+                    "related_results": related_results,
                 }
             ],
-            "has_results": len(recent_context.primary_results) > 0,
+            "has_results": has_results,
         }
 
     try:
@@ -155,7 +159,7 @@ async def search_prompt(
     template_context = {
         "query": request.query,
         "timeframe": request.timeframe,
-        "results": results,
+        "results": search_results,
         "has_results": len(search_results) > 0,
         "result_count": len(search_results),
     }

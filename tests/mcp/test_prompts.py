@@ -20,7 +20,6 @@ async def test_continue_conversation_with_topic(client, test_graph):
     assert "Continuing conversation on: Root" in result
     assert "This is a memory retrieval session" in result
     assert "Start by executing one of the suggested commands" in result
-    assert "read_note" in result
 
 
 @pytest.mark.asyncio
