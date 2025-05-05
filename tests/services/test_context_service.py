@@ -126,6 +126,32 @@ async def test_build_context(context_service, test_graph):
     assert len(primary_results) == 1
     assert len(related_results) == 2
     assert total_results == len(primary_results) + len(related_results)
+    
+    primary_result = primary_results[0]
+    assert primary_result.id == test_graph["root"].id
+    assert primary_result.type == "entity"
+    assert primary_result.title == "Root"
+    assert primary_result.permalink == "test/root"
+    assert primary_result.file_path == "test/Root.md"
+    assert primary_result.created_at is not None
+    assert primary_result.updated_at is not None
+    
+    related_result_0 = related_results[0]
+    assert related_result_0.id == test_graph["connected1"].id
+    assert related_result_0.type == "relation"
+    assert related_result_0.title == "Root → Connected Entity 1"
+    assert related_result_0.relation_type == "connects_to"
+    assert related_result_0.permalink == "test/root/connects-to/test/connected-entity-1"
+    assert related_result_0.file_path == "test/Root.md"
+    assert related_result_0.created_at is not None
+    
+    related_result_1 = related_results[1]
+    assert related_result_1.id == test_graph["connected1"].id
+    assert related_result_1.type == "entity"
+    assert related_result_1.title == test_graph["connected1"].title
+    assert related_result_1.permalink == test_graph["connected1"].permalink
+    assert related_result_1.file_path == test_graph["connected1"].file_path
+    assert related_result_1.created_at is not None
 
 
 @pytest.mark.asyncio

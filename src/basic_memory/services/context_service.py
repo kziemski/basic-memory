@@ -94,8 +94,6 @@ class ContextService:
             type_id_pairs, max_depth=depth, since=since, max_results=max_related
         )
         logger.debug(f"Found {len(related)} related results")
-        for r in related:
-            logger.debug(f"Found related {r.type}: {r.permalink}")
 
         # Build response
         return {

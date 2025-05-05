@@ -87,7 +87,7 @@ async def test_next_steps_section(template_loader, context_with_results):
     result = await template_loader.render("prompts/continue_conversation.hbs", context_with_results)
     
     assert "Next Steps" in result
-    assert "Explore more with: `search_notes({\"text\": \"Test Topic\"})`" in result
+    assert "Explore more with: `search_notes(\"Test Topic\")`" in result
     assert f"See what's changed: `recent_activity(timeframe=\"{context_with_results['timeframe']}\")`" in result
     assert "Record new learnings or decisions from this conversation" in result
 
