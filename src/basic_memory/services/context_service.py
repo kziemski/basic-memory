@@ -12,6 +12,7 @@ from basic_memory.repository.observation_repository import ObservationRepository
 from basic_memory.repository.search_repository import SearchRepository, SearchIndexRow
 from basic_memory.schemas.memory import MemoryUrl, memory_url_path
 from basic_memory.schemas.search import SearchItemType
+from basic_memory.utils import generate_permalink
 
 
 @dataclass
@@ -176,7 +177,7 @@ class ContextService:
                             type="observation",
                             id=obs.id,
                             title=f"{obs.category}: {obs.content[:50]}...",
-                            permalink=f"{primary_item.permalink}/observations/{obs.id}",
+                            permalink=generate_permalink(f"{primary_item.permalink}/observations/{obs.category}/{obs.content}"),
                             file_path=primary_item.file_path,
                             content=obs.content,
                             category=obs.category,
