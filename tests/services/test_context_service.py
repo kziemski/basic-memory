@@ -42,7 +42,7 @@ async def test_find_connected_depth_limit(context_service, test_graph):
 
 
 @pytest.mark.asyncio
-async def test_find_connected_timeframe(context_service, test_graph, search_repository):
+async def test_find_connected_timeframe(context_service, test_graph, search_repository, entity_repository):
     """Test timeframe filtering.
     This tests how traversal is affected by the item dates.
     When we filter by date, items are only included if:
@@ -53,7 +53,16 @@ async def test_find_connected_timeframe(context_service, test_graph, search_repo
     old_date = now - timedelta(days=10)
     recent_date = now - timedelta(days=1)
 
-    # Index root and its relation as old
+    # Update entity table timestamps directly
+    # Root entity uses old date
+    root_entity = test_graph["root"] 
+    await entity_repository.update(root_entity.id, {"created_at": old_date, "updated_at": old_date})
+    
+    # Connected entity uses recent date
+    connected_entity = test_graph["connected1"]
+    await entity_repository.update(connected_entity.id, {"created_at": recent_date, "updated_at": recent_date})
+    
+    # Also update search_index for test consistency
     await search_repository.index_item(
         SearchIndexRow(
             id=test_graph["root"].id,
@@ -83,8 +92,6 @@ async def test_find_connected_timeframe(context_service, test_graph, search_repo
             updated_at=old_date.isoformat(),
         )
     )
-
-    # Index connected1 as recent
     await search_repository.index_item(
         SearchIndexRow(
             id=test_graph["connected1"].id,
@@ -98,6 +105,7 @@ async def test_find_connected_timeframe(context_service, test_graph, search_repo
             updated_at=recent_date.isoformat(),
         )
     )
+    
     type_id_pairs = [("entity", test_graph["root"].id)]
 
     # Search with a 7-day cutoff
@@ -105,7 +113,8 @@ async def test_find_connected_timeframe(context_service, test_graph, search_repo
     results = await context_service.find_related(type_id_pairs, since=since_date)
 
     # Only connected1 is recent, but we can't get to it
-    # because its connecting relation is too old
+    # because its connecting relation is too old and is filtered out
+    # (we can only reach connected1 through a relation starting from root)
     entity_ids = {r.id for r in results if r.type == "entity"}
     assert len(entity_ids) == 0  # No accessible entities within timeframe
 

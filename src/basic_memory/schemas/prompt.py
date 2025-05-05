@@ -23,8 +23,10 @@ class ContinueConversationRequest(BaseModel):
     
     topic: Optional[str] = Field(None, description="Topic or keyword to search for")
     timeframe: Optional[TimeFrame] = Field(None, description="How far back to look for activity (e.g. '1d', '1 week')")
-    depth: int = Field(1, description="How many relationship 'hops' to follow when building context")
-    related_items_limit: int = Field(2, description="Maximum number of related items to include in context")
+    # Limit depth to max 2 for performance reasons - higher values cause significant slowdown
+    depth: int = Field(1, description="How many relationship 'hops' to follow when building context (max 2)", ge=1, le=5)
+    # Limit related items to prevent overloading the context
+    related_items_limit: int = Field(5, description="Maximum number of related items to include in context (max 10)", ge=1, le=10)
 
 
 class SearchPromptRequest(BaseModel):

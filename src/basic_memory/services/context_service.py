@@ -214,7 +214,6 @@ class ContextService:
 
         Uses recursive CTE to find:
         - Connected entities
-        - Their observations
         - Relations that connect them
 
         Note on depth:
@@ -228,105 +227,131 @@ class ContextService:
         if not type_id_pairs:
             return []
 
-        logger.debug(f"Finding connected items for {type_id_pairs} with depth {max_depth}")
+        # Extract entity IDs from type_id_pairs for the optimized query
+        entity_ids = [i for t, i in type_id_pairs if t == 'entity']
+        
+        if not entity_ids:
+            logger.debug("No entity IDs found in type_id_pairs")
+            return []
 
-        # Build the VALUES clause directly since SQLite doesn't handle parameterized IN well
+        logger.debug(f"Finding connected items for {len(entity_ids)} entities with depth {max_depth}")
+        
+        # Build the VALUES clause for entity IDs
+        entity_id_values = ", ".join([str(i) for i in entity_ids])
+        
+        # For compatibility with the old query, we still need this for filtering
         values = ", ".join([f"('{t}', {i})" for t, i in type_id_pairs])
-
+        
         # Parameters for bindings
-        params = {"max_depth": max_depth, "max_results": max_results}
+        params = {
+            "max_depth": max_depth, 
+            "max_results": max_results
+        }
+        
+        # Build date and timeframe filters conditionally based on since parameter
         if since:
             params["since_date"] = since.isoformat()  # pyright: ignore
-
-        # Build date filter
-        date_filter = "AND base.created_at >= :since_date" if since else ""
-        r1_date_filter = "AND r.created_at >= :since_date" if since else ""
-        related_date_filter = "AND e.created_at >= :since_date" if since else ""
-
+            date_filter = "AND e.created_at >= :since_date"
+            relation_date_filter = "AND e_from.created_at >= :since_date"
+            timeframe_condition = "AND eg.relation_date >= :since_date"
+        else:
+            date_filter = ""
+            relation_date_filter = ""
+            timeframe_condition = ""
+        
+        # Use a CTE that operates directly on entity and relation tables
+        # This avoids the overhead of the search_index virtual table
         query = text(f"""
-        WITH RECURSIVE context_graph AS (
-            -- Base case: seed items 
+        WITH RECURSIVE entity_graph AS (
+            -- Base case: seed entities
             SELECT 
-                id,
-                type,
-                title, 
-                permalink,
-                file_path,
-                from_id,
-                to_id,
-                relation_type,
-                content_snippet as content,
-                category,
-                entity_id,
+                e.id,
+                'entity' as type,
+                e.title, 
+                e.permalink,
+                e.file_path,
+                NULL as from_id,
+                NULL as to_id,
+                NULL as relation_type,
+                NULL as content,
+                NULL as category,
+                NULL as entity_id,
                 0 as depth,
-                id as root_id,
-                created_at,
-                created_at as relation_date,
+                e.id as root_id,
+                e.created_at,
+                e.created_at as relation_date,
                 0 as is_incoming
-            FROM search_index base
-            WHERE (base.type, base.id) IN ({values})
+            FROM entity e
+            WHERE e.id IN ({entity_id_values})
             {date_filter}
 
-            UNION ALL  -- Allow same paths at different depths
+            UNION ALL
 
-            -- Get relations from current entities 
-            SELECT DISTINCT
+            -- Get relations from current entities
+            SELECT
                 r.id,
-                r.type,
-                r.title,
-                r.permalink,
-                r.file_path,
+                'relation' as type,
+                r.relation_type || ': ' || r.to_name as title,
+                -- Relation model doesn't have permalink column - we'll generate it at runtime
+                '' as permalink,
+                e_from.file_path,
                 r.from_id,
                 r.to_id,
                 r.relation_type,
-                r.content_snippet as content,
-                r.category,
-                r.entity_id,
-                cg.depth + 1,
-                cg.root_id,
-                r.created_at,
-                r.created_at as relation_date,
-                CASE WHEN r.from_id = cg.id THEN 0 ELSE 1 END as is_incoming
-            FROM context_graph cg
-            JOIN search_index r ON (
-                cg.type = 'entity' AND
-                r.type = 'relation' AND 
-                (r.from_id = cg.id OR r.to_id = cg.id)
-                {r1_date_filter}
+                NULL as content,
+                NULL as category,
+                NULL as entity_id,
+                eg.depth + 1,
+                eg.root_id,
+                e_from.created_at, -- Use the from_entity's created_at since relation has no timestamp
+                e_from.created_at as relation_date,
+                CASE WHEN r.from_id = eg.id THEN 0 ELSE 1 END as is_incoming
+            FROM entity_graph eg
+            JOIN relation r ON (
+                eg.type = 'entity' AND
+                (r.from_id = eg.id OR r.to_id = eg.id)
             )
-            WHERE cg.depth < :max_depth
+            JOIN entity e_from ON (
+                r.from_id = e_from.id
+                {relation_date_filter}
+            )
+            WHERE eg.depth < :max_depth
 
             UNION ALL
 
             -- Get entities connected by relations
-            SELECT DISTINCT
+            SELECT
                 e.id,
-                e.type,
+                'entity' as type,
                 e.title,
-                e.permalink,
+                CASE 
+                    WHEN e.permalink IS NULL THEN '' 
+                    ELSE e.permalink 
+                END as permalink,
                 e.file_path,
-                e.from_id,
-                e.to_id,
-                e.relation_type,
-                e.content_snippet as content,
-                e.category,
-                e.entity_id,
-                cg.depth + 1,  -- Increment depth for entities
-                cg.root_id,
+                NULL as from_id,
+                NULL as to_id,
+                NULL as relation_type,
+                NULL as content,
+                NULL as category,
+                NULL as entity_id,
+                eg.depth + 1,
+                eg.root_id,
                 e.created_at,
-                cg.relation_date,
-                cg.is_incoming
-            FROM context_graph cg
-            JOIN search_index e ON (
-                cg.type = 'relation' AND 
-                e.type = 'entity' AND
+                eg.relation_date,
+                eg.is_incoming
+            FROM entity_graph eg
+            JOIN entity e ON (
+                eg.type = 'relation' AND
                 e.id = CASE 
-                    WHEN cg.is_incoming = 0 THEN cg.to_id  -- Fixed entity lookup
-                    ELSE cg.from_id                             
+                    WHEN eg.is_incoming = 0 THEN eg.to_id
+                    ELSE eg.from_id
                 END
-                {related_date_filter}
+                {date_filter}
             )
-            WHERE cg.depth < :max_depth
+            WHERE eg.depth < :max_depth
+            -- Only include entities connected by relations within timeframe if specified
+            {timeframe_condition}
         )
         SELECT DISTINCT 
             type,
@@ -343,12 +368,10 @@ class ContextService:
             MIN(depth) as depth,
             root_id,
             created_at
-        FROM context_graph
+        FROM entity_graph
         WHERE (type, id) NOT IN ({values})
         GROUP BY
-            type, id, title, permalink, from_id, to_id,
-            relation_type, category, entity_id,
-            root_id, created_at
+            type, id
         ORDER BY depth, type, id
         LIMIT :max_results
        """)
