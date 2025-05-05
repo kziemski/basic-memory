@@ -54,7 +54,7 @@ async def continue_conversation(
 
     # Get data needed for template
     if request.topic:
-        query = SearchQuery(text=request.topic, entity_types=[SearchItemType.ENTITY], after_date=request.timeframe)
+        query = SearchQuery(text=request.topic, after_date=request.timeframe)
         results = await search_service.search(query)
         search_results = await to_search_results(entity_service, results)
 

@@ -1,6 +1,6 @@
 """Routes for memory:// URI operations."""
 
-from typing import Annotated
+from typing import Annotated, Optional
 
 from dateparser import parse
 from fastapi import APIRouter, Query
@@ -64,7 +64,7 @@ async def get_memory_context(
     entity_repository: EntityRepositoryDep,
     uri: str,
     depth: int = 1,
-    timeframe: TimeFrame = "7d",
+    timeframe: Optional[TimeFrame] = None,
     page: int = 1,
     page_size: int = 10,
     max_related: int = 10,
@@ -78,7 +78,7 @@ async def get_memory_context(
     memory_url = normalize_memory_url(uri)
 
     # Parse timeframe
-    since = parse(timeframe)
+    since = parse(timeframe) if timeframe else None
     limit = page_size
     offset = (page - 1) * page_size
 

@@ -81,7 +81,7 @@ class ContextService:
         else:
             logger.debug(f"Build context for '{types}'")
             primary = await self.search_repository.search(
-                entity_types=types, after_date=since, limit=limit, offset=offset
+                search_item_types=types, after_date=since, limit=limit, offset=offset
             )
 
         # Get type_id pairs for traversal

@@ -146,7 +146,7 @@ class SearchRepository:
         title: Optional[str] = None,
         types: Optional[List[str]] = None,
         after_date: Optional[datetime] = None,
-        entity_types: Optional[List[SearchItemType]] = None,
+        search_item_types: Optional[List[SearchItemType]] = None,
         limit: int = 10,
         offset: int = 0,
     ) -> List[SearchIndexRow]:
@@ -196,8 +196,8 @@ class SearchRepository:
                 conditions.append("permalink MATCH :permalink")
 
         # Handle entity type filter
-        if entity_types:
-            type_list = ", ".join(f"'{t.value}'" for t in entity_types)
+        if search_item_types:
+            type_list = ", ".join(f"'{t.value}'" for t in search_item_types)
             conditions.append(f"type IN ({type_list})")
 
         # Handle type filter
