@@ -16,9 +16,9 @@ from basic_memory.api.template_loader import TemplateLoader
 
 
 @pytest_asyncio.fixture
-async def context_service(entity_repository, search_service):
+async def context_service(entity_repository, search_service, observation_repository):
     """Create a real context service for testing."""
-    return ContextService(entity_repository, search_service)
+    return ContextService(entity_repository, search_service, observation_repository)
 
 
 @pytest.mark.asyncio
@@ -53,7 +53,7 @@ async def test_continue_conversation_endpoint(
     assert context["topic"] == "Root"
     assert context["timeframe"] == "7d"
     assert context["has_results"] is True
-    assert len(context["results"]) > 0
+    assert len(context["hierarchical_results"]) > 0
     
     # Check content of prompt
     prompt = result["prompt"]

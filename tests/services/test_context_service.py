@@ -8,13 +8,13 @@ import pytest_asyncio
 from basic_memory.repository.search_repository import SearchIndexRow
 from basic_memory.schemas.memory import memory_url, memory_url_path
 from basic_memory.schemas.search import SearchItemType
-from basic_memory.services.context_service import ContextService
+from basic_memory.services.context_service import ContextService, ContextResult, ContextResultRow, ContextResultItem
 
 
 @pytest_asyncio.fixture
-async def context_service(search_repository, entity_repository):
+async def context_service(search_repository, entity_repository, observation_repository):
     """Create context service for testing."""
-    return ContextService(search_repository, entity_repository)
+    return ContextService(search_repository, entity_repository, observation_repository)
 
 
 @pytest.mark.asyncio
@@ -114,60 +114,91 @@ async def test_find_connected_timeframe(context_service, test_graph, search_repo
 async def test_build_context(context_service, test_graph):
     """Test exact permalink lookup."""
     url = memory_url.validate_strings("memory://test/root")
-    results = await context_service.build_context(url)
-    matched_results = results["metadata"]["matched_results"]
-    primary_results = results["primary_results"]
-    related_results = results["related_results"]
-    total_results = results["metadata"]["total_results"]
-
-    assert results["metadata"]["uri"] == memory_url_path(url)
-    assert results["metadata"]["depth"] == 1
-    assert matched_results == 1
-    assert len(primary_results) == 1
-    assert len(related_results) == 2
-    assert total_results == len(primary_results) + len(related_results)
+    context_result = await context_service.build_context(url)
     
-    primary_result = primary_results[0]
+    # Check metadata
+    assert context_result.metadata.uri == memory_url_path(url)
+    assert context_result.metadata.depth == 1
+    assert context_result.metadata.primary_count == 1
+    assert context_result.metadata.related_count > 0
+    assert context_result.metadata.generated_at is not None
+    
+    # Check results
+    assert len(context_result.results) == 1
+    context_item = context_result.results[0]
+    
+    # Check primary result
+    primary_result = context_item.primary_result
     assert primary_result.id == test_graph["root"].id
     assert primary_result.type == "entity"
     assert primary_result.title == "Root"
     assert primary_result.permalink == "test/root"
     assert primary_result.file_path == "test/Root.md"
     assert primary_result.created_at is not None
-    assert primary_result.updated_at is not None
     
-    related_result_0 = related_results[0]
-    assert related_result_0.id == test_graph["connected1"].id
-    assert related_result_0.type == "relation"
-    assert related_result_0.title == "Root → Connected Entity 1"
-    assert related_result_0.relation_type == "connects_to"
-    assert related_result_0.permalink == "test/root/connects-to/test/connected-entity-1"
-    assert related_result_0.file_path == "test/Root.md"
-    assert related_result_0.created_at is not None
+    # Check related results
+    assert len(context_item.related_results) > 0
     
-    related_result_1 = related_results[1]
-    assert related_result_1.id == test_graph["connected1"].id
-    assert related_result_1.type == "entity"
-    assert related_result_1.title == test_graph["connected1"].title
-    assert related_result_1.permalink == test_graph["connected1"].permalink
-    assert related_result_1.file_path == test_graph["connected1"].file_path
-    assert related_result_1.created_at is not None
+    # Find related relation
+    relation = next((r for r in context_item.related_results if r.type == "relation"), None)
+    assert relation is not None
+    assert relation.relation_type == "connects_to"
+    assert relation.from_id == test_graph["root"].id
+    assert relation.to_id == test_graph["connected1"].id
+    
+    # Find related entity
+    related_entity = next((r for r in context_item.related_results if r.type == "entity"), None)
+    assert related_entity is not None
+    assert related_entity.id == test_graph["connected1"].id
+    assert related_entity.title == test_graph["connected1"].title
+    assert related_entity.permalink == test_graph["connected1"].permalink
+
+
+@pytest.mark.asyncio
+async def test_build_context_with_observations(context_service, test_graph):
+    """Test context building with observations."""
+    # The test_graph fixture already creates observations for root entity
+    # Let's use those existing observations
+    
+    # Build context
+    url = memory_url.validate_strings("memory://test/root")
+    context_result = await context_service.build_context(url, include_observations=True)
+    
+    # Check the metadata
+    assert context_result.metadata.total_observations > 0
+    assert len(context_result.results) == 1
+    
+    # Check that observations were included
+    context_item = context_result.results[0]
+    assert len(context_item.observations) > 0
+    
+    # Check observation properties
+    for observation in context_item.observations:
+        assert observation.type == "observation"
+        assert observation.category in ["note", "tech"]  # Categories from test_graph fixture
+        assert observation.entity_id == test_graph["root"].id
+        
+    # Verify at least one observation has the correct category and content
+    note_observation = next((o for o in context_item.observations if o.category == "note"), None)
+    assert note_observation is not None
+    assert "Root note" in note_observation.content
 
 
 @pytest.mark.asyncio
 async def test_build_context_not_found(context_service):
     """Test handling non-existent permalinks."""
     context = await context_service.build_context("memory://does/not/exist")
-    assert len(context["primary_results"]) == 0
-    assert len(context["related_results"]) == 0
+    assert len(context.results) == 0
+    assert context.metadata.primary_count == 0
+    assert context.metadata.related_count == 0
 
 
 @pytest.mark.asyncio
 async def test_context_metadata(context_service, test_graph):
     """Test metadata is correctly populated."""
     context = await context_service.build_context("memory://test/root", depth=2)
-    metadata = context["metadata"]
-    assert metadata["uri"] == "test/root"
-    assert metadata["depth"] == 2
-    assert metadata["generated_at"] is not None
-    assert metadata["matched_results"] > 0
+    metadata = context.metadata
+    assert metadata.uri == "test/root"
+    assert metadata.depth == 2
+    assert metadata.generated_at is not None
+    assert metadata.primary_count > 0

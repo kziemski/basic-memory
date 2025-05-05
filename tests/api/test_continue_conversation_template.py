@@ -30,16 +30,30 @@ def entity_summary():
 @pytest.fixture
 def context_with_results(entity_summary):
     """Create a sample context with results for testing."""
+    from basic_memory.schemas.memory import ObservationSummary, ContextResult
+    
+    # Create an observation for the entity
+    observation = ObservationSummary(
+        title="Test Observation",
+        permalink="test/entity/observations/1",
+        category="test",
+        content="This is a test observation.",
+        file_path="/path/to/test/entity.md",
+        created_at=datetime.datetime(2023, 1, 1, 12, 0),
+    )
+    
+    # Create a context result with primary_result, observations, and related_results
+    context_item = ContextResult(
+        primary_result=entity_summary,
+        observations=[observation],
+        related_results=[entity_summary],
+    )
+    
     return {
         "topic": "Test Topic",
         "timeframe": "7d",
         "has_results": True,
-        "results": [
-            {
-                "primary_results": [entity_summary],
-                "related_results": [entity_summary],
-            }
-        ]
+        "hierarchical_results": [context_item]
     }
 
 
@@ -50,7 +64,7 @@ def context_without_results():
         "topic": "Empty Topic",
         "timeframe": "1d",
         "has_results": False,
-        "results": []
+        "hierarchical_results": []
     }
 
 @pytest.mark.asyncio
