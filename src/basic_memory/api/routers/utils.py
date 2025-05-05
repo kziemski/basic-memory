@@ -8,14 +8,20 @@ from basic_memory.schemas.memory import (
     RelationSummary,
     MemoryMetadata,
     GraphContext,
+    ContextResult,
 )
 from basic_memory.schemas.search import SearchItemType, SearchResult
 from basic_memory.services import EntityService
-from basic_memory.services.context_service import ContextResultRow
+from basic_memory.services.context_service import (
+    ContextResultRow, 
+    ContextResult as ServiceContextResult, 
+    ContextResultItem,
+    ContextMetadata as ServiceContextMetadata
+)
 
 
-async def to_graph_context(context, entity_repository: EntityRepository, page: Optional[int] = None, page_size: Optional[int]= None):
-    # return results
+async def to_graph_context(context_result: ServiceContextResult, entity_repository: EntityRepository, page: Optional[int] = None, page_size: Optional[int]= None):
+    # Helper function to convert items to summaries
     async def to_summary(item: SearchIndexRow | ContextResultRow):
         match item.type:
             case SearchItemType.ENTITY:
@@ -50,13 +56,48 @@ async def to_graph_context(context, entity_repository: EntityRepository, page: O
             case _:  # pragma: no cover
                 raise ValueError(f"Unexpected type: {item.type}")
 
-    primary_results = [await to_summary(r) for r in context["primary_results"]]
-    related_results = [await to_summary(r) for r in context["related_results"]]
-    metadata = MemoryMetadata.model_validate(context["metadata"])
-    # Transform to GraphContext
+    # Process the hierarchical results
+    hierarchical_results = []
+    for context_item in context_result.results:
+        # Process primary result
+        primary_result = await to_summary(context_item.primary_result)
+        
+        # Process observations
+        observations = []
+        for obs in context_item.observations:
+            observations.append(await to_summary(obs))
+            
+        # Process related results
+        related = []
+        for rel in context_item.related_results:
+            related.append(await to_summary(rel))
+            
+        # Add to hierarchical results
+        hierarchical_results.append(
+            ContextResult(
+                primary_result=primary_result,
+                observations=observations,
+                related_results=related,
+            )
+        )
+    
+    # Create schema metadata from service metadata
+    metadata = MemoryMetadata(
+        uri=context_result.metadata.uri,
+        types=context_result.metadata.types,
+        depth=context_result.metadata.depth,
+        timeframe=context_result.metadata.timeframe,
+        generated_at=context_result.metadata.generated_at,
+        primary_count=context_result.metadata.primary_count,
+        related_count=context_result.metadata.related_count,
+        total_results=context_result.metadata.primary_count + context_result.metadata.related_count,
+        total_relations=context_result.metadata.total_relations,
+        total_observations=context_result.metadata.total_observations,
+    )
+    
+    # Return new GraphContext with just hierarchical results
     return GraphContext(
-        primary_results=primary_results,
-        related_results=related_results,
+        results=hierarchical_results,
         metadata=metadata,
         page=page,
         page_size=page_size,

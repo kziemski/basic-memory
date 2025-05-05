@@ -59,56 +59,54 @@ async def continue_conversation(
         search_results = await to_search_results(entity_service, results)
 
         # Build context from results
-        contexts = []
+        all_hierarchical_results = []
         for result in search_results:
             if hasattr(result, "permalink") and result.permalink:
-                context_results = await context_service.build_context(
+                # Get hierarchical context using the new dataclass-based approach
+                context_result = await context_service.build_context(
                     result.permalink,
                     depth=request.depth,
                     since=since,
                     max_related=request.related_items_limit,
+                    include_observations=True,  # Include observations for entities
                 )
-                context = await to_graph_context(
-                    context_results, entity_repository=entity_repository
+                
+                # Process results into the schema format
+                graph_context = await to_graph_context(
+                    context_result, entity_repository=entity_repository
                 )
-
-                if context.primary_results:
-                    contexts.append(
-                        {
-                            "primary_results": context.primary_results[:1],
-                            "related_results": context.related_results[:3],
-                        }
-                    )
-
+                
+                # Add results to our collection (limit to top results for each permalink)
+                if graph_context.results:
+                    all_hierarchical_results.extend(graph_context.results[:3])
+        
+        # Limit to a reasonable number of total results
+        all_hierarchical_results = all_hierarchical_results[:10]
+        
         template_context = {
             "topic": request.topic,
             "timeframe": request.timeframe,
-            "results": contexts,
-            "has_results": len(contexts) > 0,
+            "hierarchical_results": all_hierarchical_results,
+            "has_results": len(all_hierarchical_results) > 0,
         }
     else:
         # If no topic, get recent activity
-        context = await context_service.build_context(
+        context_result = await context_service.build_context(
             types=[SearchItemType.ENTITY],
             depth=request.depth,
             since=since,
             max_related=request.related_items_limit,
+            include_observations=True,
         )
-        recent_context = await to_graph_context(context, entity_repository=entity_repository)
+        recent_context = await to_graph_context(context_result, entity_repository=entity_repository)
 
-        has_results = len(recent_context.primary_results) > 0
-        primary_results = recent_context.primary_results[:5]
-        related_results = recent_context.related_results[:2]
+        hierarchical_results = recent_context.results[:5]  # Limit to top 5 recent items
+        
         template_context = {
             "topic": f"Recent Activity from ({request.timeframe})",
             "timeframe": request.timeframe,
-            "results": [
-                {
-                    "primary_results": primary_results,
-                    "related_results": related_results,
-                }
-            ],
-            "has_results": has_results,
+            "hierarchical_results": hierarchical_results,
+            "has_results": len(hierarchical_results) > 0,
         }
 
     try:

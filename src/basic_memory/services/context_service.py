@@ -1,14 +1,15 @@
 """Service for building rich context from the knowledge graph."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from loguru import logger
 from sqlalchemy import text
 
 from basic_memory.repository.entity_repository import EntityRepository
-from basic_memory.repository.search_repository import SearchRepository
+from basic_memory.repository.observation_repository import ObservationRepository
+from basic_memory.repository.search_repository import SearchRepository, SearchIndexRow
 from basic_memory.schemas.memory import MemoryUrl, memory_url_path
 from basic_memory.schemas.search import SearchItemType
 
@@ -31,6 +32,35 @@ class ContextResultRow:
     entity_id: Optional[int] = None
 
 
+@dataclass
+class ContextResultItem:
+    """A hierarchical result containing a primary item with its observations and related items."""
+    primary_result: ContextResultRow | SearchIndexRow
+    observations: List[ContextResultRow] = field(default_factory=list)
+    related_results: List[ContextResultRow] = field(default_factory=list)
+
+
+@dataclass
+class ContextMetadata:
+    """Metadata about a context result."""
+    uri: Optional[str] = None
+    types: Optional[List[SearchItemType]] = None
+    depth: int = 1
+    timeframe: Optional[str] = None
+    generated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    primary_count: int = 0
+    related_count: int = 0
+    total_observations: int = 0
+    total_relations: int = 0
+
+
+@dataclass
+class ContextResult:
+    """Complete context result with metadata."""
+    results: List[ContextResultItem] = field(default_factory=list)
+    metadata: ContextMetadata = field(default_factory=ContextMetadata)
+
+
 class ContextService:
     """Service for building rich context from memory:// URIs.
 
@@ -44,9 +74,11 @@ class ContextService:
         self,
         search_repository: SearchRepository,
         entity_repository: EntityRepository,
+        observation_repository: ObservationRepository,
     ):
         self.search_repository = search_repository
         self.entity_repository = entity_repository
+        self.observation_repository = observation_repository
 
     async def build_context(
         self,
@@ -57,7 +89,8 @@ class ContextService:
         limit=10,
         offset=0,
         max_related: int = 10,
-    ):
+        include_observations: bool = True,
+    ) -> ContextResult:
         """Build rich context from a memory:// URI."""
         logger.debug(
             f"Building context for URI: '{memory_url}' depth: '{depth}' since: '{since}' limit: '{limit}' offset: '{offset}'  max_related: '{max_related}'"
@@ -94,22 +127,80 @@ class ContextService:
             type_id_pairs, max_depth=depth, since=since, max_results=max_related
         )
         logger.debug(f"Found {len(related)} related results")
-
-        # Build response
-        return {
-            "primary_results": primary,
-            "related_results": related,
-            "metadata": {
-                "uri": memory_url_path(memory_url) if memory_url else None,
-                "types": types if types else None,
-                "depth": depth,
-                "timeframe": since.isoformat() if since else None,
-                "generated_at": datetime.now(timezone.utc).isoformat(),
-                "matched_results": len(primary),
-                "total_results": len(primary) + len(related),
-                "total_relations": sum(1 for r in related if r.type == SearchItemType.RELATION),
-            },
-        }
+        
+        # Collect entity IDs from primary and related results
+        entity_ids = []
+        for result in primary:
+            if result.type == SearchItemType.ENTITY.value:
+                
+                entity_ids.append(result.id)
+        
+        for result in related:
+            if result.type == SearchItemType.ENTITY.value:
+                entity_ids.append(result.id)
+                
+        # Fetch observations for all entities if requested
+        observations_by_entity = {}
+        if include_observations and entity_ids:
+            # Use our observation repository to get observations for all entities at once
+            observations_by_entity = await self.observation_repository.find_by_entities(entity_ids)
+            logger.debug(f"Found observations for {len(observations_by_entity)} entities")
+            
+        # Create metadata dataclass
+        metadata = ContextMetadata(
+            uri=memory_url_path(memory_url) if memory_url else None,
+            types=types,
+            depth=depth,
+            timeframe=since.isoformat() if since else None,
+            primary_count=len(primary),
+            related_count=len(related),
+            total_observations=sum(len(obs) for obs in observations_by_entity.values()),
+            total_relations=sum(1 for r in related if r.type == SearchItemType.RELATION),
+        )
+        
+        # Build context results list directly with ContextResultItem objects
+        context_results = []
+        
+        # For each primary result
+        for primary_item in primary:
+            # Find all related items with this primary item as root
+            related_to_primary = [r for r in related if r.root_id == primary_item.id]
+            
+            # Get observations for this item if it's an entity
+            item_observations = []
+            if primary_item.type == SearchItemType.ENTITY.value and include_observations:
+                # Convert Observation models to ContextResultRows
+                for obs in observations_by_entity.get(primary_item.id, []):
+                    item_observations.append(
+                        ContextResultRow(
+                            type="observation",
+                            id=obs.id,
+                            title=f"{obs.category}: {obs.content[:50]}...",
+                            permalink=f"{primary_item.permalink}/observations/{obs.id}",
+                            file_path=primary_item.file_path,
+                            content=obs.content,
+                            category=obs.category,
+                            entity_id=primary_item.id,
+                            depth=0,
+                            root_id=primary_item.id,
+                            created_at=primary_item.created_at, # created_at time from entity
+                        )
+                    )
+            
+            # Create ContextResultItem directly
+            context_item = ContextResultItem(
+                primary_result=primary_item,
+                observations=item_observations,
+                related_results=related_to_primary
+            )
+            
+            context_results.append(context_item)
+            
+        # Return the structured ContextResult
+        return ContextResult(
+            results=context_results,
+            metadata=metadata
+        )
 
     async def find_related(
         self,

@@ -184,9 +184,15 @@ LinkResolverDep = Annotated[LinkResolver, Depends(get_link_resolver)]
 
 
 async def get_context_service(
-    search_repository: SearchRepositoryDep, entity_repository: EntityRepositoryDep
+    search_repository: SearchRepositoryDep, 
+    entity_repository: EntityRepositoryDep,
+    observation_repository: ObservationRepositoryDep
 ) -> ContextService:
-    return ContextService(search_repository, entity_repository)
+    return ContextService(
+        search_repository=search_repository, 
+        entity_repository=entity_repository, 
+        observation_repository=observation_repository
+    )
 
 
 ContextServiceDep = Annotated[ContextService, Depends(get_context_service)]

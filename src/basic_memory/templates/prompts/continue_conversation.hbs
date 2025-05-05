@@ -9,25 +9,33 @@ Please use the available basic-memory tools to gather relevant context before re
 Here's what I found from previous conversations:
 
 {{#if has_results}}
-{{#each results}}
-{{#each primary_results}}
+{{#each hierarchical_results}}
 <memory>
---- memory://{{ permalink }}
+--- memory://{{ primary_result.permalink }}
 
-## {{ title }}
-- **Type**: {{ type }}
-- **Created**: {{date created_at "%Y-%m-%d %H:%M"}}
+## {{ primary_result.title }}
+- **Type**: {{ primary_result.type }}
+- **Created**: {{date primary_result.created_at "%Y-%m-%d %H:%M"}}
 
-{{#if content}}
+{{#if primary_result.content}}
 **Excerpt**:
 <excerpt>
-{{ content }}
+{{ primary_result.content }}
 </excerpt>
 {{/if}}
-You can read this document with: `read_note("{{ permalink }}")`
-{{/each}}
 
-{{#if (size related_results)}}
+{{#if observations}}
+## Observations
+{{#each observations}}
+<observation>
+- [{{ category }}] {{ content }}
+</observation>
+{{/each}}
+{{/if}}
+
+You can read this document with: `read_note("{{ primary_result.permalink }}")`
+
+{{#if related_results}}
 ## Related Context
 
 {{#each related_results}}
@@ -41,12 +49,10 @@ You can view this document with: `read_note("{{ permalink }}")`
 You can view this file with: `read_file("{{ file_path }}")`
 {{/if}}
 </related>
-
 {{/each}}
 {{/if}}
 
 </memory>
-
 {{/each}}
 {{else}}
 The supplied query did not return any information specifically on this topic.
