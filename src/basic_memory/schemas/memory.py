@@ -129,20 +129,8 @@ class ContextResult(BaseModel):
 
 class GraphContext(BaseModel):
     """Complete context response."""
-
-    # Direct matches
-    primary_results: Sequence[EntitySummary | RelationSummary | ObservationSummary] = Field(
-        description="results directly matching URI",
-        default_factory=list
-    )
-
-    # Related entities
-    related_results: Sequence[EntitySummary | RelationSummary | ObservationSummary] = Field(
-        description="related results",
-        default_factory=list
-    )
     
-    # New hierarchical results
+    # hierarchical results
     results: Sequence[ContextResult] = Field(
         description="Hierarchical results with related items nested",
         default_factory=list
