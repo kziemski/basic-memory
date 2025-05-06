@@ -163,7 +163,7 @@ async def test_import_chatgpt(test_config, client: AsyncClient, tmp_path, chatgp
     # Verify files were created
     conv_path = Path("test_chatgpt") / "20250111-Test_Conversation.md"
     assert await file_service.exists(conv_path)
-    
+
     content, _ = await file_service.read_file(conv_path)
     assert "# Test Conversation" in content
     assert "Hello, this is a test message" in content
@@ -310,10 +310,13 @@ async def test_import_memory_json(
 ):
     """Test importing memory.json file."""
     # Create a test file
-    file_path = await create_test_upload_file(tmp_path, memory_json_content)
+    json_file = tmp_path / "memory.json"
+    with open(json_file, "w", encoding="utf-8") as f:
+        for entity in memory_json_content:
+            f.write(json.dumps(entity) + "\n")
     
     # Create a multipart form with the file
-    with open(file_path, "rb") as f:
+    with open(json_file, "rb") as f:
         files = {"file": ("memory.json", f, "application/json")}
         data = {"folder": "test_memory_json"}
         
@@ -344,10 +347,13 @@ async def test_import_memory_json_without_folder(
 ):
     """Test importing memory.json file without specifying a destination folder."""
     # Create a test file
-    file_path = await create_test_upload_file(tmp_path, memory_json_content)
+    json_file = tmp_path / "memory.json"
+    with open(json_file, "w", encoding="utf-8") as f:
+        for entity in memory_json_content:
+            f.write(json.dumps(entity) + "\n")
     
     # Create a multipart form with the file
-    with open(file_path, "rb") as f:
+    with open(json_file, "rb") as f:
         files = {"file": ("memory.json", f, "application/json")}
         
         # Send request without destination_folder

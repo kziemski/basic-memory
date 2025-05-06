@@ -108,7 +108,27 @@ async def import_memory_json(
     Raises:
         HTTPException: If import fails.
     """
-    return await import_file(importer, file, folder)
+    try:
+        file_data = []
+        file_bytes = await file.read()
+        file_str = file_bytes.decode("utf-8")
+        for line in file_str.splitlines():
+            json_data = json.loads(line)
+            file_data.append(json_data)
+
+        result = await importer.import_data(file_data, folder)
+        if not result.success:  # pragma: no cover
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=result.error_message or "Import failed",
+            )
+    except Exception as e:
+        logger.exception("Import failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Import failed: {str(e)}",
+        )
+    return result
 
 
 async def import_file(importer: Importer, file: UploadFile, destination_folder: str):
