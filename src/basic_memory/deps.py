@@ -11,6 +11,12 @@ from sqlalchemy.ext.asyncio import (
 
 from basic_memory import db
 from basic_memory.config import ProjectConfig, config
+from basic_memory.importers import (
+    ChatGPTImporter,
+    ClaudeConversationsImporter,
+    ClaudeProjectsImporter,
+    MemoryJsonImporter,
+)
 from basic_memory.markdown import EntityParser
 from basic_memory.markdown.markdown_processor import MarkdownProcessor
 from basic_memory.repository.entity_repository import EntityRepository
@@ -244,3 +250,43 @@ async def get_directory_service(
 
 
 DirectoryServiceDep = Annotated[DirectoryService, Depends(get_directory_service)]
+
+
+# Import
+
+async def get_chatgpt_importer(
+    project_config: ProjectConfigDep, markdown_processor: MarkdownProcessorDep
+) -> ChatGPTImporter:
+    """Create ChatGPTImporter with dependencies."""
+    return ChatGPTImporter(project_config.home, markdown_processor)
+
+
+ChatGPTImporterDep = Annotated[ChatGPTImporter, Depends(get_chatgpt_importer)]
+
+async def get_claude_conversations_importer(
+    project_config: ProjectConfigDep, markdown_processor: MarkdownProcessorDep
+) -> ClaudeConversationsImporter:
+    """Create ChatGPTImporter with dependencies."""
+    return ClaudeConversationsImporter(project_config.home, markdown_processor)
+
+
+ClaudeConversationsImporterDep = Annotated[ClaudeConversationsImporter, Depends(get_claude_conversations_importer)]
+
+async def get_claude_projects_importer(
+    project_config: ProjectConfigDep, markdown_processor: MarkdownProcessorDep
+) -> ClaudeProjectsImporter:
+    """Create ChatGPTImporter with dependencies."""
+    return ClaudeProjectsImporter(project_config.home, markdown_processor)
+
+
+ClaudeProjectsImporterDep = Annotated[ClaudeProjectsImporter, Depends(get_claude_projects_importer)]
+
+
+async def get_memory_json_importer(
+    project_config: ProjectConfigDep, markdown_processor: MarkdownProcessorDep
+) -> MemoryJsonImporter:
+    """Create ChatGPTImporter with dependencies."""
+    return MemoryJsonImporter(project_config.home, markdown_processor)
+
+
+MemoryJsonImporterDep = Annotated[MemoryJsonImporter, Depends(get_memory_json_importer)]

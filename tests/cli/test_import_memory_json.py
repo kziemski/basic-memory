@@ -6,7 +6,9 @@ import pytest
 from typer.testing import CliRunner
 
 from basic_memory.cli.app import import_app
-from basic_memory.cli.commands import import_memory_json
+from basic_memory.cli.commands import import_memory_json #noqa
+from basic_memory.config import config
+from basic_memory.importers import MemoryJsonImporter
 from basic_memory.markdown import EntityParser, MarkdownProcessor
 
 # Set up CLI runner
@@ -41,25 +43,6 @@ def sample_json_file(tmp_path, sample_entities):
             f.write(json.dumps(entity) + "\n")
     return json_file
 
-
-@pytest.mark.asyncio
-async def test_process_memory_json(tmp_path, sample_json_file):
-    """Test importing entities from JSON."""
-    entity_parser = EntityParser(tmp_path)
-    processor = MarkdownProcessor(entity_parser)
-
-    results = await import_memory_json.process_memory_json(sample_json_file, tmp_path, processor)
-
-    assert results["entities"] == 1
-    assert results["relations"] == 1
-
-    # Check file was created
-    entity_file = tmp_path / "test/test_entity.md"
-    assert entity_file.exists()
-    content = entity_file.read_text(encoding="utf-8")
-    assert "Test observation 1" in content
-    assert "Test observation 2" in content
-    assert "test_relation [[related_entity]]" in content
 
 
 @pytest.mark.asyncio

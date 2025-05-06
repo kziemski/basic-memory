@@ -10,7 +10,7 @@ from basic_memory.deps import get_project_config, get_engine_factory
 
 
 @pytest_asyncio.fixture
-def app(test_config, engine_factory) -> FastAPI:
+async def app(test_config, engine_factory) -> FastAPI:
     """Create FastAPI test application."""
     from basic_memory.api.app import app
 

@@ -10,6 +10,7 @@ from basic_memory import __version__ as version
 from basic_memory import db
 from basic_memory.api.routers import (
     directory_router,
+    importer_router,
     knowledge,
     management,
     memory,
@@ -56,6 +57,7 @@ app.include_router(search.router)
 app.include_router(project.router)
 app.include_router(directory_router.router)
 app.include_router(prompt_router.router)
+app.include_router(importer_router.router)
 
 
 @app.exception_handler(Exception)
