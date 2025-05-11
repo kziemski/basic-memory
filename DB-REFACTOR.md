@@ -38,20 +38,20 @@ To:
 
 ### 3. Project Model Implementation
 
-- [ ] Create Project SQLAlchemy model in models/project.py
-- [ ] Define attributes: id, name, path, config, etc.
-- [ ] Add proper indexes and constraints
-- [ ] Add project_id foreign key to Entity, Observation, and Relation models
+- [x] Create Project SQLAlchemy model in models/project.py
+- [x] Define attributes: id, name, path, config, etc.
+- [x] Add proper indexes and constraints
+- [x] Add project_id foreign key to Entity, Observation, and Relation models
 - [ ] Create migration script for updating schema with project relations
 - [ ] Implement app DB initialization with project table
 
 ### 4. Repository Layer Updates
 
-- [ ] Create ProjectRepository for CRUD operations on Project model
-- [ ] Update base Repository class to filter queries by project_id
-- [ ] Update existing repositories to use project context automatically
-- [ ] Implement query scoping to specific projects
-- [ ] Add functions for project context management
+- [x] Create ProjectRepository for CRUD operations on Project model
+- [x] Update base Repository class to filter queries by project_id
+- [x] Update existing repositories to use project context automatically
+- [x] Implement query scoping to specific projects
+- [x] Add functions for project context management
 
 ### 5. Search Functionality Updates
 
