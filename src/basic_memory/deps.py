@@ -1,8 +1,8 @@
 """Dependency injection functions for basic-memory services."""
 
-from typing import Annotated
+from typing import Annotated, Optional, Union
 
-from fastapi import Depends
+from fastapi import Depends, Query, HTTPException, status
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     AsyncEngine,
@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import (
 
 from basic_memory import db
 from basic_memory.config import ProjectConfig, config
+from basic_memory.models import Project
 from basic_memory.importers import (
     ChatGPTImporter,
     ClaudeConversationsImporter,
@@ -22,6 +23,7 @@ from basic_memory.markdown.markdown_processor import MarkdownProcessor
 from basic_memory.repository.entity_repository import EntityRepository
 from basic_memory.repository.observation_repository import ObservationRepository
 from basic_memory.repository.project_info_repository import ProjectInfoRepository
+from basic_memory.repository.project_repository import ProjectRepository
 from basic_memory.repository.relation_repository import RelationRepository
 from basic_memory.repository.search_repository import SearchRepository
 from basic_memory.services import EntityService, ProjectService
@@ -41,6 +43,66 @@ def get_project_config() -> ProjectConfig:  # pragma: no cover
 
 
 ProjectConfigDep = Annotated[ProjectConfig, Depends(get_project_config)]  # pragma: no cover
+
+
+async def get_project_repository(
+    session_maker: Annotated[async_sessionmaker[AsyncSession], Depends(get_session_maker)],
+) -> ProjectRepository:
+    """Get the project repository."""
+    return ProjectRepository(session_maker)
+
+
+ProjectRepositoryDep = Annotated[ProjectRepository, Depends(get_project_repository)]
+
+
+async def get_project_id(
+    project: Annotated[Optional[Union[str, int]], Query(default=None, description="Project name or ID")] = None,
+    project_repository: ProjectRepositoryDep = None,
+) -> int:
+    """Get the current project ID based on request parameters.
+
+    If no project is specified, returns the default project.
+
+    Args:
+        project: Project name or ID from request query parameter
+        project_repository: Repository for project operations
+
+    Returns:
+        The resolved project ID
+
+    Raises:
+        HTTPException: If project is specified but not found
+    """
+    # If no project specified, return default
+    if project is None:
+        default_project = await project_repository.get_default_project()
+        if default_project is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No default project found."
+            )
+        return default_project.id
+
+    # Try to parse as integer first
+    if isinstance(project, str) and project.isdigit():
+        project_id = int(project)
+        project_obj = await project_repository.find_by_id(project_id)
+        if project_obj:
+            return project_id
+
+    # Try by name
+    project_obj = await project_repository.get_by_name(str(project))
+    if project_obj:
+        return project_obj.id
+
+    # Not found
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail=f"Project '{project}' not found."
+    )
+
+
+ProjectIdDep = Annotated[int, Depends(get_project_id)]
 
 
 ## sqlalchemy
@@ -73,9 +135,10 @@ SessionMakerDep = Annotated[async_sessionmaker, Depends(get_session_maker)]
 
 async def get_entity_repository(
     session_maker: SessionMakerDep,
+    project_id: ProjectIdDep,
 ) -> EntityRepository:
-    """Create an EntityRepository instance."""
-    return EntityRepository(session_maker)
+    """Create an EntityRepository instance for the current project."""
+    return EntityRepository(session_maker, project_id=project_id)
 
 
 EntityRepositoryDep = Annotated[EntityRepository, Depends(get_entity_repository)]
@@ -83,9 +146,10 @@ EntityRepositoryDep = Annotated[EntityRepository, Depends(get_entity_repository)
 
 async def get_observation_repository(
     session_maker: SessionMakerDep,
+    project_id: ProjectIdDep,
 ) -> ObservationRepository:
-    """Create an ObservationRepository instance."""
-    return ObservationRepository(session_maker)
+    """Create an ObservationRepository instance for the current project."""
+    return ObservationRepository(session_maker, project_id=project_id)
 
 
 ObservationRepositoryDep = Annotated[ObservationRepository, Depends(get_observation_repository)]
@@ -93,9 +157,10 @@ ObservationRepositoryDep = Annotated[ObservationRepository, Depends(get_observat
 
 async def get_relation_repository(
     session_maker: SessionMakerDep,
+    project_id: ProjectIdDep,
 ) -> RelationRepository:
-    """Create a RelationRepository instance."""
-    return RelationRepository(session_maker)
+    """Create a RelationRepository instance for the current project."""
+    return RelationRepository(session_maker, project_id=project_id)
 
 
 RelationRepositoryDep = Annotated[RelationRepository, Depends(get_relation_repository)]
@@ -103,9 +168,10 @@ RelationRepositoryDep = Annotated[RelationRepository, Depends(get_relation_repos
 
 async def get_search_repository(
     session_maker: SessionMakerDep,
+    project_id: ProjectIdDep,
 ) -> SearchRepository:
-    """Create a SearchRepository instance."""
-    return SearchRepository(session_maker)
+    """Create a SearchRepository instance for the current project."""
+    return SearchRepository(session_maker, project_id=project_id)
 
 
 SearchRepositoryDep = Annotated[SearchRepository, Depends(get_search_repository)]
@@ -113,9 +179,10 @@ SearchRepositoryDep = Annotated[SearchRepository, Depends(get_search_repository)
 
 def get_project_info_repository(
     session_maker: SessionMakerDep,
+    project_id: ProjectIdDep,
 ):
-    """Dependency for StatsRepository."""
-    return ProjectInfoRepository(session_maker)
+    """Dependency for ProjectInfoRepository."""
+    return ProjectInfoRepository(session_maker, project_id=project_id)
 
 
 ProjectInfoRepositoryDep = Annotated[ProjectInfoRepository, Depends(get_project_info_repository)]

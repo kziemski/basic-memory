@@ -43,6 +43,15 @@ class Repository[T: Base]:
             # Check if this model has a project_id column
             self.has_project_id = "project_id" in self.valid_columns
 
+    def _set_project_id_if_needed(self, model: T) -> None:
+        """Set project_id on model if needed and available."""
+        if (
+            self.has_project_id
+            and self.project_id is not None
+            and getattr(model, "project_id", None) is None
+        ):
+            setattr(model, "project_id", self.project_id)
+
     def get_model_data(self, entity_data):
         model_data = {
             k: v for k, v in entity_data.items() if k in self.valid_columns and v is not None
@@ -93,6 +102,9 @@ class Repository[T: Base]:
         :return: the added model instance
         """
         async with db.scoped_session(self.session_maker) as session:
+            # Set project_id if applicable and not already set
+            self._set_project_id_if_needed(model)
+
             session.add(model)
             await session.flush()
 
@@ -116,6 +128,11 @@ class Repository[T: Base]:
         :return: the added models instances
         """
         async with db.scoped_session(self.session_maker) as session:
+
+            # set the project id if not present in models
+            for model in models:
+                self._set_project_id_if_needed(model)
+
             session.add_all(models)
             await session.flush()
 

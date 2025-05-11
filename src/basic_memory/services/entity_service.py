@@ -239,6 +239,7 @@ class EntityService(BaseService[EntityModel]):
 
         # Mark as incomplete because we still need to add relations
         model.checksum = None
+        # Repository will set project_id automatically
         return await self.repository.add(model)
 
     async def update_entity_and_observations(

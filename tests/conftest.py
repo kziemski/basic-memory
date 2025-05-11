@@ -270,11 +270,12 @@ async def full_entity(sample_entity, entity_repository, file_service, entity_ser
             title="Search_Entity",
             folder="test",
             entity_type="test",
+            project=entity_repository.project_id,
             content=dedent("""
                 ## Observations
                 - [tech] Tech note
                 - [design] Design note
-                
+
                 ## Relations
                 - out1 [[Test Entity]]
                 - out2 [[Test Entity]]
@@ -301,6 +302,7 @@ async def test_graph(
             title="Deeper Entity",
             entity_type="deeper",
             folder="test",
+            project=entity_repository.project_id,
             content=dedent("""
                 # Deeper Entity
                 """),
@@ -312,6 +314,7 @@ async def test_graph(
             title="Deep Entity",
             entity_type="deep",
             folder="test",
+            project=entity_repository.project_id,
             content=dedent("""
                 # Deep Entity
                 - deeper_connection [[Deeper Entity]]
@@ -324,6 +327,7 @@ async def test_graph(
             title="Connected Entity 2",
             entity_type="test",
             folder="test",
+            project=entity_repository.project_id,
             content=dedent("""
                 # Connected Entity 2
                 - deep_connection [[Deep Entity]]
@@ -336,6 +340,7 @@ async def test_graph(
             title="Connected Entity 1",
             entity_type="test",
             folder="test",
+            project=entity_repository.project_id,
             content=dedent("""
                 # Connected Entity 1
                 - [note] Connected 1 note
@@ -349,6 +354,7 @@ async def test_graph(
             title="Root",
             entity_type="test",
             folder="test",
+            project=entity_repository.project_id,
             content=dedent("""
                 # Root Entity
                 - [note] Root note 1
