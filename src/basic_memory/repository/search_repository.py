@@ -19,6 +19,7 @@ from basic_memory.schemas.search import SearchItemType
 class SearchIndexRow:
     """Search result with score and metadata."""
 
+    project_id: int
     id: int
     type: str
     file_path: str
@@ -85,6 +86,7 @@ class SearchIndexRow:
             "category": self.category,
             "created_at": self.created_at if self.created_at else None,
             "updated_at": self.updated_at if self.updated_at else None,
+            "project_id": self.project_id,
         }
 
 
@@ -97,7 +99,13 @@ class SearchRepository:
         Args:
             session_maker: SQLAlchemy session maker
             project_id: Project ID to filter all operations by
+
+        Raises:
+            ValueError: If project_id is None or invalid
         """
+        if project_id is None or project_id <= 0:
+            raise ValueError("A valid project_id is required for SearchRepository")
+
         self.session_maker = session_maker
         self.project_id = project_id
 
@@ -233,6 +241,7 @@ class SearchRepository:
 
         sql = f"""
             SELECT 
+                project_id,
                 id, 
                 title, 
                 permalink,
@@ -262,6 +271,7 @@ class SearchRepository:
 
         results = [
             SearchIndexRow(
+                project_id=self.project_id,
                 id=row.id,
                 title=row.title,
                 permalink=row.permalink,
@@ -284,7 +294,7 @@ class SearchRepository:
         logger.debug(f"Found {len(results)} search results")
         for r in results:
             logger.debug(
-                f"Search result: type:{r.type} title: {r.title} permalink: {r.permalink} score: {r.score}"
+                f"Search result: project_id: {r.project_id} type:{r.type} title: {r.title} permalink: {r.permalink} score: {r.score}"
             )
 
         return results
@@ -331,7 +341,9 @@ class SearchRepository:
         """Delete an item from the search index by entity_id."""
         async with db.scoped_session(self.session_maker) as session:
             await session.execute(
-                text("DELETE FROM search_index WHERE entity_id = :entity_id AND project_id = :project_id"),
+                text(
+                    "DELETE FROM search_index WHERE entity_id = :entity_id AND project_id = :project_id"
+                ),
                 {"entity_id": entity_id, "project_id": self.project_id},
             )
             await session.commit()
@@ -340,7 +352,9 @@ class SearchRepository:
         """Delete an item from the search index."""
         async with db.scoped_session(self.session_maker) as session:
             await session.execute(
-                text("DELETE FROM search_index WHERE permalink = :permalink AND project_id = :project_id"),
+                text(
+                    "DELETE FROM search_index WHERE permalink = :permalink AND project_id = :project_id"
+                ),
                 {"permalink": permalink, "project_id": self.project_id},
             )
             await session.commit()
