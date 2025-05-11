@@ -5,7 +5,14 @@ from tempfile import TemporaryDirectory
 
 import pytest
 
-from basic_memory.config import BasicMemoryConfig, ConfigManager, DATA_DIR_NAME, CONFIG_FILE_NAME
+from basic_memory.config import (
+    BasicMemoryConfig,
+    ConfigManager,
+    ProjectConfig,
+    DATA_DIR_NAME,
+    CONFIG_FILE_NAME,
+    APP_DATABASE_NAME
+)
 
 
 class TestBasicMemoryConfig:
@@ -41,6 +48,22 @@ class TestBasicMemoryConfig:
         # Main should still be added automatically
         assert "main" in config.projects
 
+    def test_app_database_path(self, monkeypatch):
+        """Test that app_database_path property returns the correct path."""
+        with TemporaryDirectory() as tempdir:
+            temp_home = Path(tempdir)
+            monkeypatch.setattr(Path, "home", lambda: temp_home)
+
+            config = BasicMemoryConfig()
+            expected_path = temp_home / DATA_DIR_NAME / APP_DATABASE_NAME
+
+            # The property should create the directory and touch the file
+            assert config.app_database_path == expected_path
+            assert expected_path.exists()
+
+            # The path should point to the app directory, not project directory
+            assert config.app_database_path.parent == temp_home / DATA_DIR_NAME
+
 
 class TestConfigManager:
     """Test the ConfigManager class."""
@@ -65,6 +88,17 @@ class TestConfigManager:
         assert config_manager.config_file.exists()
         assert "main" in config_manager.projects
         assert config_manager.default_project == "main"
+
+    def test_current_project_id(self, temp_home):
+        """Test setting and getting current project ID."""
+        config_manager = ConfigManager()
+
+        # Set project ID
+        project_id = 42
+        config_manager.current_project_id = project_id
+
+        # Verify it was set
+        assert config_manager.current_project_id == project_id
 
     def test_save_and_load_config(self, temp_home):
         """Test saving and loading configuration."""
@@ -154,3 +188,23 @@ class TestConfigManager:
 
         # Should not raise exception
         config_manager.save_config(config_manager.config)
+
+
+class TestProjectConfig:
+    """Test the ProjectConfig class."""
+
+    def test_database_path(self, monkeypatch):
+        """Test that database_path returns the app-level database path."""
+        with TemporaryDirectory() as tempdir:
+            temp_home = Path(tempdir)
+            monkeypatch.setattr(Path, "home", lambda: temp_home)
+
+            # Create a test configuration
+            project_config = ProjectConfig(
+                project="test-project",
+                home=Path(tempdir) / "test-project"
+            )
+
+            # The database_path should point to the app-level database
+            app_db_path = temp_home / DATA_DIR_NAME / APP_DATABASE_NAME
+            assert project_config.database_path == app_db_path

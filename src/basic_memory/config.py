@@ -8,11 +8,14 @@ from typing import Any, Dict, Literal, Optional
 from loguru import logger
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing_extensions import deprecated
 
 import basic_memory
 from basic_memory.utils import setup_logging
 
+
 DATABASE_NAME = "memory.db"
+APP_DATABASE_NAME = "memory.db"  # Using the same name but in the app directory
 DATA_DIR_NAME = ".basic-memory"
 CONFIG_FILE_NAME = "config.json"
 
@@ -53,12 +56,15 @@ class ProjectConfig(BaseSettings):
 
     @property
     def database_path(self) -> Path:
-        """Get SQLite database path."""
-        database_path = self.home / DATA_DIR_NAME / DATABASE_NAME
-        if not database_path.exists():
-            database_path.parent.mkdir(parents=True, exist_ok=True)
-            database_path.touch()
-        return database_path
+        """Get SQLite database path.
+
+        Rreturns the app-level database path
+        for backward compatibility in the codebase.
+        """
+        
+        # Load the app-level database path from the global config
+        config = config_manager.load_config()
+        return config.app_database_path
 
     @field_validator("home")
     @classmethod
@@ -108,6 +114,19 @@ class BasicMemoryConfig(BaseSettings):
         if self.default_project not in self.projects:
             self.default_project = "main"
 
+    @property
+    def app_database_path(self) -> Path:
+        """Get the path to the app-level database.
+
+        This is the single database that will store all knowledge data
+        across all projects.
+        """
+        database_path = Path.home() / DATA_DIR_NAME / APP_DATABASE_NAME
+        if not database_path.exists():
+            database_path.parent.mkdir(parents=True, exist_ok=True)
+            database_path.touch()
+        return database_path
+
 
 class ConfigManager:
     """Manages Basic Memory configuration."""
@@ -122,6 +141,9 @@ class ConfigManager:
 
         # Load or create configuration
         self.config = self.load_config()
+
+        # Current project context for the session
+        self.current_project_id: int
 
     def load_config(self) -> BasicMemoryConfig:
         """Load configuration from file or create default."""
