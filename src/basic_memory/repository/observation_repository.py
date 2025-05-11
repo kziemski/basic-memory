@@ -12,8 +12,14 @@ from basic_memory.repository.repository import Repository
 class ObservationRepository(Repository[Observation]):
     """Repository for Observation model with memory-specific operations."""
 
-    def __init__(self, session_maker: async_sessionmaker):
-        super().__init__(session_maker, Observation)
+    def __init__(self, session_maker: async_sessionmaker, project_id: int):
+        """Initialize with session maker and project_id filter.
+
+        Args:
+            session_maker: SQLAlchemy session maker
+            project_id: Project ID to filter all operations by
+        """
+        super().__init__(session_maker, Observation, project_id=project_id)
 
     async def find_by_entity(self, entity_id: int) -> Sequence[Observation]:
         """Find all observations for a specific entity."""

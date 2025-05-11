@@ -2,10 +2,9 @@ import asyncio
 from contextlib import asynccontextmanager
 from enum import Enum, auto
 from pathlib import Path
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator, Optional, Dict, Any
 
-
-from basic_memory.config import ProjectConfig
+from basic_memory.config import ProjectConfig, config_manager
 from alembic import command
 from alembic.config import Config
 

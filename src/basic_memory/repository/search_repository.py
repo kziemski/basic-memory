@@ -91,8 +91,15 @@ class SearchIndexRow:
 class SearchRepository:
     """Repository for search index operations."""
 
-    def __init__(self, session_maker: async_sessionmaker[AsyncSession]):
+    def __init__(self, session_maker: async_sessionmaker[AsyncSession], project_id: int):
+        """Initialize with session maker and project_id filter.
+
+        Args:
+            session_maker: SQLAlchemy session maker
+            project_id: Project ID to filter all operations by
+        """
         self.session_maker = session_maker
+        self.project_id = project_id
 
     async def init_search_index(self):
         """Create or recreate the search index."""
@@ -213,6 +220,10 @@ class SearchRepository:
             # order by most recent first
             order_by_clause = ", updated_at DESC"
 
+        # Always filter by project_id
+        params["project_id"] = self.project_id
+        conditions.append("project_id = :project_id")
+
         # set limit on search query
         params["limit"] = limit
         params["offset"] = offset
@@ -290,6 +301,10 @@ class SearchRepository:
                 {"permalink": search_index_row.permalink},
             )
 
+            # Prepare data for insert with project_id
+            insert_data = search_index_row.to_insert()
+            insert_data["project_id"] = self.project_id
+
             # Insert new record
             await session.execute(
                 text("""
@@ -297,15 +312,17 @@ class SearchRepository:
                         id, title, content_stems, content_snippet, permalink, file_path, type, metadata,
                         from_id, to_id, relation_type,
                         entity_id, category,
-                        created_at, updated_at
+                        created_at, updated_at,
+                        project_id
                     ) VALUES (
                         :id, :title, :content_stems, :content_snippet, :permalink, :file_path, :type, :metadata,
                         :from_id, :to_id, :relation_type,
                         :entity_id, :category,
-                        :created_at, :updated_at
+                        :created_at, :updated_at,
+                        :project_id
                     )
                 """),
-                search_index_row.to_insert(),
+                insert_data,
             )
             logger.debug(f"indexed row {search_index_row}")
             await session.commit()
@@ -314,8 +331,8 @@ class SearchRepository:
         """Delete an item from the search index by entity_id."""
         async with db.scoped_session(self.session_maker) as session:
             await session.execute(
-                text("DELETE FROM search_index WHERE entity_id = :entity_id"),
-                {"entity_id": entity_id},
+                text("DELETE FROM search_index WHERE entity_id = :entity_id AND project_id = :project_id"),
+                {"entity_id": entity_id, "project_id": self.project_id},
             )
             await session.commit()
 
@@ -323,8 +340,8 @@ class SearchRepository:
         """Delete an item from the search index."""
         async with db.scoped_session(self.session_maker) as session:
             await session.execute(
-                text("DELETE FROM search_index WHERE permalink = :permalink"),
-                {"permalink": permalink},
+                text("DELETE FROM search_index WHERE permalink = :permalink AND project_id = :project_id"),
+                {"permalink": permalink, "project_id": self.project_id},
             )
             await session.commit()
 

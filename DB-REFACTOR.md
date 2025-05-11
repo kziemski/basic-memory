@@ -35,13 +35,6 @@ To:
 - [x] Keep JSON-based config.json for project listing/paths
 - [x] Update project configuration loading to use app DB for all operations
 
-### 2. Database Connection Management
-
-- [ ] Update db.py to use only app-level database
-- [ ] Remove per-project database connections
-- [ ] Implement a project context system in database queries
-- [ ] Update connection pooling for single database
-- [ ] Update initialization code for app DB
 
 ### 3. Project Model Implementation
 

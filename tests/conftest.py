@@ -17,9 +17,11 @@ from basic_memory.markdown import EntityParser
 from basic_memory.markdown.markdown_processor import MarkdownProcessor
 from basic_memory.models import Base
 from basic_memory.models.knowledge import Entity
+from basic_memory.models.project import Project
 from basic_memory.repository.entity_repository import EntityRepository
 from basic_memory.repository.observation_repository import ObservationRepository
 from basic_memory.repository.project_info_repository import ProjectInfoRepository
+from basic_memory.repository.project_repository import ProjectRepository
 from basic_memory.repository.relation_repository import RelationRepository
 from basic_memory.repository.search_repository import SearchRepository
 from basic_memory.schemas.base import Entity as EntitySchema
@@ -79,25 +81,51 @@ async def session_maker(engine_factory) -> async_sessionmaker[AsyncSession]:
 
 
 @pytest_asyncio.fixture(scope="function")
-async def entity_repository(session_maker: async_sessionmaker[AsyncSession]) -> EntityRepository:
-    """Create an EntityRepository instance."""
-    return EntityRepository(session_maker)
+async def entity_repository(
+    session_maker: async_sessionmaker[AsyncSession],
+    test_project: Project
+) -> EntityRepository:
+    """Create an EntityRepository instance with project context."""
+    return EntityRepository(session_maker, project_id=test_project.id)
 
 
 @pytest_asyncio.fixture(scope="function")
 async def observation_repository(
     session_maker: async_sessionmaker[AsyncSession],
+    test_project: Project
 ) -> ObservationRepository:
-    """Create an ObservationRepository instance."""
-    return ObservationRepository(session_maker)
+    """Create an ObservationRepository instance with project context."""
+    return ObservationRepository(session_maker, project_id=test_project.id)
 
 
 @pytest_asyncio.fixture(scope="function")
 async def relation_repository(
     session_maker: async_sessionmaker[AsyncSession],
+    test_project: Project
 ) -> RelationRepository:
-    """Create a RelationRepository instance."""
-    return RelationRepository(session_maker)
+    """Create a RelationRepository instance with project context."""
+    return RelationRepository(session_maker, project_id=test_project.id)
+
+
+@pytest_asyncio.fixture(scope="function")
+async def project_repository(
+    session_maker: async_sessionmaker[AsyncSession],
+) -> ProjectRepository:
+    """Create a ProjectRepository instance."""
+    return ProjectRepository(session_maker)
+
+
+@pytest_asyncio.fixture(scope="function")
+async def test_project(project_repository: ProjectRepository) -> Project:
+    """Create a test project to be used as context for other repositories."""
+    project_data = {
+        "name": "Test Project Context",
+        "description": "Project used as context for tests",
+        "path": "/test/project/context",
+        "is_active": True,
+        "is_default": True,  # Explicitly set as the default project
+    }
+    return await project_repository.create(project_data)
 
 
 ## Services
@@ -178,9 +206,9 @@ async def directory_service(entity_repository, test_config) -> DirectoryService:
 
 
 @pytest_asyncio.fixture
-async def search_repository(session_maker):
-    """Create SearchRepository instance"""
-    return SearchRepository(session_maker)
+async def search_repository(session_maker, test_project: Project):
+    """Create SearchRepository instance with project context"""
+    return SearchRepository(session_maker, project_id=test_project.id)
 
 
 @pytest_asyncio.fixture(autouse=True)
