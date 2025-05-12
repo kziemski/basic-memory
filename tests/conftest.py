@@ -125,7 +125,9 @@ async def test_project(project_repository: ProjectRepository) -> Project:
         "is_active": True,
         "is_default": True,  # Explicitly set as the default project
     }
-    return await project_repository.create(project_data)
+    project = await project_repository.create(project_data)
+    logger.info(f"Created test project with permalink: {project.permalink}")
+    return project
 
 
 ## Services

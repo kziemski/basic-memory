@@ -2,11 +2,13 @@
 
 from typing import AsyncGenerator
 
+import pytest
 import pytest_asyncio
 from fastapi import FastAPI
 from httpx import AsyncClient, ASGITransport
 
 from basic_memory.deps import get_project_config, get_engine_factory
+from basic_memory.models import Project
 
 
 @pytest_asyncio.fixture
@@ -24,3 +26,14 @@ async def client(app: FastAPI) -> AsyncGenerator[AsyncClient, None]:
     """Create client using ASGI transport - same as CLI will use."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
+
+
+@pytest.fixture
+def project_url(test_project: Project) -> str:
+    """Create a URL prefix for the project routes.
+
+    This helps tests generate the correct URL for project-scoped routes.
+    """
+    # Make sure this matches what's in tests/conftest.py for test_project creation
+    # The permalink should be generated from "Test Project Context"
+    return f"/{test_project.permalink}"

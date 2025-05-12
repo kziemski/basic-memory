@@ -4,6 +4,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.exception_handlers import http_exception_handler
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 from loguru import logger
 
 from basic_memory import __version__ as version
@@ -20,6 +22,7 @@ from basic_memory.api.routers import (
     prompt_router,
 )
 from basic_memory.config import config as project_config
+from basic_memory.repository.project_repository import ProjectRepository
 from basic_memory.services.initialization import initialize_app
 
 
@@ -49,15 +52,15 @@ app = FastAPI(
 
 
 # Include routers
-app.include_router(knowledge.router)
-app.include_router(management.router)
-app.include_router(memory.router)
-app.include_router(resource.router)
-app.include_router(search.router)
-app.include_router(project.router)
-app.include_router(directory_router.router)
-app.include_router(prompt_router.router)
-app.include_router(importer_router.router)
+app.include_router(knowledge.router, prefix="/{project}")
+app.include_router(management.router, prefix="/{project}")
+app.include_router(memory.router, prefix="/{project}")
+app.include_router(resource.router, prefix="/{project}")
+app.include_router(search.router, prefix="/{project}")
+app.include_router(project.router, prefix="/{project}")
+app.include_router(directory_router.router, prefix="/{project}")
+app.include_router(prompt_router.router, prefix="/{project}")
+app.include_router(importer_router.router, prefix="/{project}")
 
 
 @app.exception_handler(Exception)

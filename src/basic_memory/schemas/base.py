@@ -140,13 +140,11 @@ class Entity(BaseModel):
     - A list of observations (facts/notes about the entity)
     - Optional relations to other entities
     - Optional description for high-level overview
-    - A project_id for scoping entities to specific projects
     """
 
     # private field to override permalink
     _permalink: Optional[str] = None
 
-    project: Optional[int | str]
     title: str
     content: Optional[str] = None
     folder: str

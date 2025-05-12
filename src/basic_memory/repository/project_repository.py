@@ -25,16 +25,25 @@ class ProjectRepository(Repository[Project]):
     
     async def get_by_name(self, name: str) -> Optional[Project]:
         """Get project by name.
-        
+
         Args:
             name: Unique name of the project
         """
         query = self.select().where(Project.name == name)
         return await self.find_one(query)
-    
+
+    async def get_by_permalink(self, permalink: str) -> Optional[Project]:
+        """Get project by permalink.
+
+        Args:
+            permalink: URL-friendly identifier for the project
+        """
+        query = self.select().where(Project.permalink == permalink)
+        return await self.find_one(query)
+
     async def get_by_path(self, path: Union[Path, str]) -> Optional[Project]:
         """Get project by filesystem path.
-        
+
         Args:
             path: Path to the project directory (will be converted to string internally)
         """

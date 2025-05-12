@@ -2,7 +2,8 @@
 
 from typing import Annotated, Optional, Union
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
+from loguru import logger
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     AsyncEngine,
@@ -88,38 +89,28 @@ async def get_project_id(
     project_repository: ProjectRepositoryDep,
     project: ProjectPathDep,
 ) -> int:
-    """Get the current project ID based on path parameters.
+    """Get the current project ID from request state.
 
-    If no project is specified in the path, returns the default project.
+    When using sub-applications with /{project} mounting, the project value
+    is stored in request.state by middleware.
 
     Args:
-        project: Project name or ID from path parameter (extracted via dependency)
+        request: The current request object
         project_repository: Repository for project operations
 
     Returns:
         The resolved project ID
 
     Raises:
-        HTTPException: If project is specified but not found
+        HTTPException: If project is not found
     """
-    # If no project specified, return default
-    if project is None:
-        default_project = await project_repository.get_default_project()
-        if default_project is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="No default project found."
-            )
-        return default_project.id
 
-    # Try to parse as integer first
-    if isinstance(project, str) and project.isdigit():
-        project_id = int(project)
-        project_obj = await project_repository.find_by_id(project_id)
-        if project_obj:
-            return project_id
+    # Try by permalink first (most common case with URL paths)
+    project_obj = await project_repository.get_by_permalink(str(project))
+    if project_obj:
+        return project_obj.id
 
-    # Try by name
+    # Try by name if permalink lookup fails
     project_obj = await project_repository.get_by_name(str(project))
     if project_obj:
         return project_obj.id

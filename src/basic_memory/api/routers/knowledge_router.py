@@ -24,9 +24,8 @@ router = APIRouter(prefix="/knowledge", tags=["knowledge"])
 ## Create endpoints
 
 
-@router.post("/{project}/entities", response_model=EntityResponse)
+@router.post("/entities", response_model=EntityResponse)
 async def create_entity(
-    project: str,
     data: Entity,
     background_tasks: BackgroundTasks,
     entity_service: EntityServiceDep,
@@ -53,9 +52,8 @@ async def create_entity(
     return result
 
 
-@router.put("/{project}/entities/{permalink:path}", response_model=EntityResponse)
+@router.put("/entities/{permalink:path}", response_model=EntityResponse)
 async def create_or_update_entity(
-    project: str,
     permalink: Permalink,
     data: Entity,
     response: Response,
@@ -108,9 +106,8 @@ async def create_or_update_entity(
 ## Read endpoints
 
 
-@router.get("/{project}/entities/{identifier:path}", response_model=EntityResponse)
+@router.get("/entities/{identifier:path}", response_model=EntityResponse)
 async def get_entity(
-    project: str,
     entity_service: EntityServiceDep,
     link_resolver: LinkResolverDep,
     identifier: str,
@@ -131,9 +128,8 @@ async def get_entity(
     return result
 
 
-@router.get("/{project}/entities", response_model=EntityListResponse)
+@router.get("/entities", response_model=EntityListResponse)
 async def get_entities(
-    project: str,
     entity_service: EntityServiceDep,
     permalink: Annotated[list[str] | None, Query()] = None,
 ) -> EntityListResponse:
@@ -150,9 +146,8 @@ async def get_entities(
 ## Delete endpoints
 
 
-@router.delete("/{project}/entities/{identifier:path}", response_model=DeleteEntitiesResponse)
+@router.delete("/entities/{identifier:path}", response_model=DeleteEntitiesResponse)
 async def delete_entity(
-    project: str,
     identifier: str,
     background_tasks: BackgroundTasks,
     entity_service: EntityServiceDep,
@@ -176,9 +171,8 @@ async def delete_entity(
     return result
 
 
-@router.post("/{project}/entities/delete", response_model=DeleteEntitiesResponse)
+@router.post("/entities/delete", response_model=DeleteEntitiesResponse)
 async def delete_entities(
-    project: str,
     data: DeleteEntitiesRequest,
     background_tasks: BackgroundTasks,
     entity_service: EntityServiceDep,

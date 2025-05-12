@@ -51,6 +51,9 @@ async def test_create_project(project_repository: ProjectRepository):
     assert isinstance(project.created_at, datetime)
     assert isinstance(project.updated_at, datetime)
 
+    # Verify permalink was generated correctly
+    assert project.permalink == "test-project"
+
     # Verify in database
     found = await project_repository.find_by_id(project.id)
     assert found is not None
@@ -58,6 +61,7 @@ async def test_create_project(project_repository: ProjectRepository):
     assert found.name == project.name
     assert found.description == project.description
     assert found.path == project.path
+    assert found.permalink == "test-project"
     assert found.is_active is True
     assert found.is_default is False
 
@@ -73,6 +77,23 @@ async def test_get_by_name(project_repository: ProjectRepository, sample_project
 
     # Test non-existent name
     found = await project_repository.get_by_name("Non-existent Project")
+    assert found is None
+
+
+@pytest.mark.asyncio
+async def test_get_by_permalink(project_repository: ProjectRepository, sample_project: Project):
+    """Test getting a project by permalink."""
+    # Verify the permalink value
+    assert sample_project.permalink == "test-project"
+
+    # Test exact match
+    found = await project_repository.get_by_permalink(sample_project.permalink)
+    assert found is not None
+    assert found.id == sample_project.id
+    assert found.permalink == sample_project.permalink
+
+    # Test non-existent permalink
+    found = await project_repository.get_by_permalink("non-existent-project")
     assert found is None
 
 
@@ -200,20 +221,29 @@ async def test_update_project(project_repository: ProjectRepository, sample_proj
         "path": "/updated/path",
     }
     updated_project = await project_repository.update(sample_project.id, updated_data)
-    
+
     # Verify returned object
     assert updated_project is not None
     assert updated_project.id == sample_project.id
     assert updated_project.name == "Updated Project Name"
     assert updated_project.description == "Updated description"
     assert updated_project.path == "/updated/path"
-    
+
+    # Verify permalink was updated based on new name
+    assert updated_project.permalink == "updated-project-name"
+
     # Verify in database
     found = await project_repository.find_by_id(sample_project.id)
     assert found is not None
     assert found.name == "Updated Project Name"
     assert found.description == "Updated description"
     assert found.path == "/updated/path"
+    assert found.permalink == "updated-project-name"
+
+    # Verify we can find by the new permalink
+    found_by_permalink = await project_repository.get_by_permalink("updated-project-name")
+    assert found_by_permalink is not None
+    assert found_by_permalink.id == sample_project.id
 
 
 @pytest.mark.asyncio
