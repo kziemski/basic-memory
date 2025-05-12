@@ -65,6 +65,7 @@ async def test_find_connected_timeframe(context_service, test_graph, search_repo
     # Also update search_index for test consistency
     await search_repository.index_item(
         SearchIndexRow(
+            project_id=entity_repository.project_id,
             id=test_graph["root"].id,
             title=test_graph["root"].title,
             content_snippet="Root content",
@@ -78,6 +79,7 @@ async def test_find_connected_timeframe(context_service, test_graph, search_repo
     )
     await search_repository.index_item(
         SearchIndexRow(
+            project_id=entity_repository.project_id,
             id=test_graph["relations"][0].id,
             title="Root Entity → Connected Entity 1",
             content_snippet="",
@@ -94,6 +96,7 @@ async def test_find_connected_timeframe(context_service, test_graph, search_repo
     )
     await search_repository.index_item(
         SearchIndexRow(
+            project_id=entity_repository.project_id,
             id=test_graph["connected1"].id,
             title=test_graph["connected1"].title,
             content_snippet="Connected 1 content",

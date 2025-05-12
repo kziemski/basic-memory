@@ -44,9 +44,35 @@ def get_project_config() -> ProjectConfig:  # pragma: no cover
 
 ProjectConfigDep = Annotated[ProjectConfig, Depends(get_project_config)]  # pragma: no cover
 
+## sqlalchemy
+
+
+async def get_engine_factory(
+    project_config: ProjectConfigDep,
+) -> tuple[AsyncEngine, async_sessionmaker[AsyncSession]]:  # pragma: no cover
+    """Get engine and session maker."""
+    engine, session_maker = await db.get_or_create_db(project_config.database_path)
+    return engine, session_maker
+
+
+EngineFactoryDep = Annotated[
+    tuple[AsyncEngine, async_sessionmaker[AsyncSession]], Depends(get_engine_factory)
+]
+
+
+async def get_session_maker(engine_factory: EngineFactoryDep) -> async_sessionmaker[AsyncSession]:
+    """Get session maker."""
+    _, session_maker = engine_factory
+    return session_maker
+
+
+SessionMakerDep = Annotated[async_sessionmaker, Depends(get_session_maker)]
+
+
+## repositories
 
 async def get_project_repository(
-    session_maker: Annotated[async_sessionmaker[AsyncSession], Depends(get_session_maker)],
+    session_maker: SessionMakerDep,
 ) -> ProjectRepository:
     """Get the project repository."""
     return ProjectRepository(session_maker)
@@ -56,8 +82,8 @@ ProjectRepositoryDep = Annotated[ProjectRepository, Depends(get_project_reposito
 
 
 async def get_project_id(
-    project: Annotated[Optional[Union[str, int]], Query(default=None, description="Project name or ID")] = None,
-    project_repository: ProjectRepositoryDep = None,
+    project: Optional[Union[str, int]],
+    project_repository: ProjectRepositoryDep,
 ) -> int:
     """Get the current project ID based on request parameters.
 
@@ -101,36 +127,15 @@ async def get_project_id(
         detail=f"Project '{project}' not found."
     )
 
-
+"""
+The project_id dependency is used in the following:
+- EntityRepository
+- ObservationRepository
+- RelationRepository
+- SearchRepository
+- ProjectInfoRepository
+"""
 ProjectIdDep = Annotated[int, Depends(get_project_id)]
-
-
-## sqlalchemy
-
-
-async def get_engine_factory(
-    project_config: ProjectConfigDep,
-) -> tuple[AsyncEngine, async_sessionmaker[AsyncSession]]:  # pragma: no cover
-    """Get engine and session maker."""
-    engine, session_maker = await db.get_or_create_db(project_config.database_path)
-    return engine, session_maker
-
-
-EngineFactoryDep = Annotated[
-    tuple[AsyncEngine, async_sessionmaker[AsyncSession]], Depends(get_engine_factory)
-]
-
-
-async def get_session_maker(engine_factory: EngineFactoryDep) -> async_sessionmaker[AsyncSession]:
-    """Get session maker."""
-    _, session_maker = engine_factory
-    return session_maker
-
-
-SessionMakerDep = Annotated[async_sessionmaker, Depends(get_session_maker)]
-
-
-## repositories
 
 
 async def get_entity_repository(

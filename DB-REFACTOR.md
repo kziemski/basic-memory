@@ -55,11 +55,11 @@ To:
 
 ### 5. Search Functionality Updates
 
-- [ ] Update search_index table to include project_id
-- [ ] Modify search queries to filter by project_id
-- [ ] Update FTS (Full Text Search) to be project-aware
-- [ ] Add appropriate indices for efficient project-scoped searches
-- [ ] Update search repository for project context
+- [x] Update search_index table to include project_id
+- [x] Modify search queries to filter by project_id
+- [x] Update FTS (Full Text Search) to be project-aware
+- [x] Add appropriate indices for efficient project-scoped searches
+- [x] Update search repository for project context
 
 ### 6. Service Layer Updates
 
@@ -115,6 +115,12 @@ To:
 - [ ] Add multi-project testing scenarios
 - [ ] Create tests for migration processes
 - [ ] Test performance with larger multi-project datasets
+
+### 13 Migrations
+
+- [ ] project table
+- [ ] search project_id index
+- [ ] project import/sync - during initialization
 
 ## Database Schema Changes
 
