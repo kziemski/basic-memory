@@ -7,12 +7,12 @@ import pytest
 
 
 @pytest.mark.asyncio
-async def test_get_project_info_endpoint(test_graph, client, test_config):
+async def test_get_project_info_endpoint(test_graph, client, test_config, project_url):
     """Test the project-info endpoint returns correctly structured data."""
     # Set up some test data in the database
 
     # Call the endpoint
-    response = await client.get("/project/info")
+    response = await client.get(f"{project_url}/project/info")
 
     # Verify response
     assert response.status_code == 200
@@ -51,10 +51,10 @@ async def test_get_project_info_endpoint(test_graph, client, test_config):
 
 
 @pytest.mark.asyncio
-async def test_get_project_info_content(test_graph, client, test_config):
+async def test_get_project_info_content(test_graph, client, test_config, project_url):
     """Test that project-info contains actual data from the test database."""
     # Call the endpoint
-    response = await client.get("/project/info")
+    response = await client.get(f"{project_url}/project/info")
 
     # Verify response
     assert response.status_code == 200
@@ -77,7 +77,7 @@ async def test_get_project_info_content(test_graph, client, test_config):
 
 
 @pytest.mark.asyncio
-async def test_get_project_info_watch_status(test_graph, client, test_config):
+async def test_get_project_info_watch_status(test_graph, client, test_config, project_url):
     """Test that project-info correctly handles watch status."""
     # Create a mock watch status file
     mock_watch_status = {
@@ -97,7 +97,7 @@ async def test_get_project_info_watch_status(test_graph, client, test_config):
         patch("pathlib.Path.read_text", return_value=json.dumps(mock_watch_status)),
     ):
         # Call the endpoint
-        response = await client.get("/project/info")
+        response = await client.get(f"{project_url}/project/info")
 
         # Verify response
         assert response.status_code == 200
@@ -111,10 +111,10 @@ async def test_get_project_info_watch_status(test_graph, client, test_config):
 
 
 @pytest.mark.asyncio
-async def test_list_projects_endpoint(test_graph, client, test_config):
+async def test_list_projects_endpoint(test_graph, client, test_config, project_url):
     """Test the list projects endpoint returns correctly structured data."""
     # Call the endpoint
-    response = await client.get("/project/projects")
+    response = await client.get(f"{project_url}/project/projects")
 
     # Verify response
     assert response.status_code == 200

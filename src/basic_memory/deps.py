@@ -176,15 +176,8 @@ async def get_search_repository(
 SearchRepositoryDep = Annotated[SearchRepository, Depends(get_search_repository)]
 
 
-def get_project_info_repository(
-    session_maker: SessionMakerDep,
-    project_id: ProjectIdDep,
-) -> ProjectInfoRepository:
-    """Dependency for ProjectInfoRepository."""
-    return ProjectInfoRepository(session_maker, project_id=project_id)
-
-
-ProjectInfoRepositoryDep = Annotated[ProjectInfoRepository, Depends(get_project_info_repository)]
+# ProjectInfoRepository is deprecated and will be removed in a future version.
+# Use ProjectRepository instead, which has the same functionality plus more project-specific operations.
 
 ## services
 
@@ -297,10 +290,10 @@ SyncServiceDep = Annotated[SyncService, Depends(get_sync_service)]
 
 
 async def get_project_service(
-    project_info_repository: ProjectInfoRepositoryDep,
+    project_repository: ProjectRepositoryDep,
 ) -> ProjectService:
     """Create ProjectService with repository."""
-    return ProjectService(repository=project_info_repository)
+    return ProjectService(repository=project_repository)
 
 
 ProjectServiceDep = Annotated[ProjectService, Depends(get_project_service)]

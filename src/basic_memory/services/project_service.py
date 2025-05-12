@@ -9,7 +9,7 @@ from loguru import logger
 from sqlalchemy import text
 
 from basic_memory.config import ConfigManager, config, ProjectConfig
-from basic_memory.repository.project_info_repository import ProjectInfoRepository
+from basic_memory.repository.project_repository import ProjectRepository
 from basic_memory.schemas import (
     ActivityMetrics,
     ProjectInfoResponse,
@@ -22,7 +22,7 @@ from basic_memory.sync.watch_service import WATCH_STATUS_JSON
 class ProjectService:
     """Service for managing Basic Memory projects."""
 
-    def __init__(self, repository: Optional[ProjectInfoRepository] = None):
+    def __init__(self, repository: Optional[ProjectRepository] = None):
         """Initialize the project service."""
         super().__init__()
         self.config_manager = ConfigManager()

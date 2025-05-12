@@ -28,7 +28,8 @@ async def test_continue_conversation_endpoint(
     search_service,
     context_service,
     entity_repository,
-    test_graph
+    test_graph,
+    project_url
 ):
     """Test the continue_conversation endpoint with real services."""
     # Create request data
@@ -40,7 +41,7 @@ async def test_continue_conversation_endpoint(
     }
     
     # Call the endpoint
-    response = await client.post("/prompt/continue-conversation", json=request_data)
+    response = await client.post(f"{project_url}/prompt/continue-conversation", json=request_data)
     
     # Verify response
     assert response.status_code == 200
@@ -67,7 +68,7 @@ async def test_continue_conversation_endpoint(
         "related_items_limit": 2
     }
     
-    response = await client.post("/prompt/continue-conversation", json=request_data)
+    response = await client.post(f"{project_url}/prompt/continue-conversation", json=request_data)
     
     assert response.status_code == 200
     result = response.json()
@@ -79,7 +80,8 @@ async def test_search_prompt_endpoint(
     client: AsyncClient,
     entity_service,
     search_service,
-    test_graph
+    test_graph,
+    project_url
 ):
     """Test the search_prompt endpoint with real services."""
     # Create request data
@@ -89,7 +91,7 @@ async def test_search_prompt_endpoint(
     }
     
     # Call the endpoint
-    response = await client.post("/prompt/search", json=request_data)
+    response = await client.post(f"{project_url}/prompt/search", json=request_data)
     
     # Verify response
     assert response.status_code == 200
@@ -114,7 +116,8 @@ async def test_search_prompt_endpoint(
 async def test_search_prompt_no_results(
     client: AsyncClient,
     entity_service,
-    search_service
+    search_service,
+    project_url
 ):
     """Test the search_prompt endpoint with a query that returns no results."""
     # Create request data with a query that shouldn't match anything
@@ -124,7 +127,7 @@ async def test_search_prompt_no_results(
     }
     
     # Call the endpoint
-    response = await client.post("/prompt/search", json=request_data)
+    response = await client.post(f"{project_url}/prompt/search", json=request_data)
     
     # Verify response
     assert response.status_code == 200
@@ -146,7 +149,8 @@ async def test_search_prompt_no_results(
 @pytest.mark.asyncio
 async def test_error_handling(
     client: AsyncClient,
-    monkeypatch
+    monkeypatch,
+    project_url
 ):
     """Test error handling in the endpoints by breaking the template loader."""
     # Patch the template loader to raise an exception
@@ -158,7 +162,7 @@ async def test_error_handling(
     
     # Test continue_conversation error handling
     response = await client.post(
-        "/prompt/continue-conversation",
+        f"{project_url}/prompt/continue-conversation",
         json={"topic": "test error", "timeframe": "7d"}
     )
     
@@ -168,7 +172,7 @@ async def test_error_handling(
     
     # Test search_prompt error handling
     response = await client.post(
-        "/prompt/search",
+        f"{project_url}/prompt/search",
         json={"query": "test error", "timeframe": "7d"}
     )
     

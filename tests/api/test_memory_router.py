@@ -8,9 +8,9 @@ from basic_memory.schemas.memory import GraphContext, RelationSummary, Observati
 
 
 @pytest.mark.asyncio
-async def test_get_memory_context(client, test_graph):
+async def test_get_memory_context(client, test_graph, project_url):
     """Test getting context from memory URL."""
-    response = await client.get("/memory/test/root")
+    response = await client.get(f"{project_url}/memory/test/root")
     assert response.status_code == 200
 
     context = GraphContext(**response.json())
@@ -27,9 +27,9 @@ async def test_get_memory_context(client, test_graph):
 
 
 @pytest.mark.asyncio
-async def test_get_memory_context_pagination(client, test_graph):
+async def test_get_memory_context_pagination(client, test_graph, project_url):
     """Test getting context from memory URL."""
-    response = await client.get("/memory/test/root?page=1&page_size=1")
+    response = await client.get(f"{project_url}/memory/test/root?page=1&page_size=1")
     assert response.status_code == 200
 
     context = GraphContext(**response.json())
@@ -45,9 +45,9 @@ async def test_get_memory_context_pagination(client, test_graph):
 
 
 @pytest.mark.asyncio
-async def test_get_memory_context_pattern(client, test_graph):
+async def test_get_memory_context_pattern(client, test_graph, project_url):
     """Test getting context with pattern matching."""
-    response = await client.get("/memory/test/*")
+    response = await client.get(f"{project_url}/memory/test/*")
     assert response.status_code == 200
 
     context = GraphContext(**response.json())
@@ -56,15 +56,15 @@ async def test_get_memory_context_pattern(client, test_graph):
 
 
 @pytest.mark.asyncio
-async def test_get_memory_context_depth(client, test_graph):
+async def test_get_memory_context_depth(client, test_graph, project_url):
     """Test depth parameter affects relation traversal."""
     # With depth=1, should only get immediate connections
-    response = await client.get("/memory/test/root?depth=1&max_results=20")
+    response = await client.get(f"{project_url}/memory/test/root?depth=1&max_results=20")
     assert response.status_code == 200
     context1 = GraphContext(**response.json())
 
     # With depth=2, should get deeper connections
-    response = await client.get("/memory/test/root?depth=3&max_results=20")
+    response = await client.get(f"{project_url}/memory/test/root?depth=3&max_results=20")
     assert response.status_code == 200
     context2 = GraphContext(**response.json())
 
@@ -76,15 +76,15 @@ async def test_get_memory_context_depth(client, test_graph):
 
 
 @pytest.mark.asyncio
-async def test_get_memory_context_timeframe(client, test_graph):
+async def test_get_memory_context_timeframe(client, test_graph, project_url):
     """Test timeframe parameter filters by date."""
     # Recent timeframe
-    response = await client.get("/memory/test/root?timeframe=1d")
+    response = await client.get(f"{project_url}/memory/test/root?timeframe=1d")
     assert response.status_code == 200
     recent = GraphContext(**response.json())
 
     # Longer timeframe
-    response = await client.get("/memory/test/root?timeframe=30d")
+    response = await client.get(f"{project_url}/memory/test/root?timeframe=30d")
     assert response.status_code == 200
     older = GraphContext(**response.json())
 
@@ -96,9 +96,9 @@ async def test_get_memory_context_timeframe(client, test_graph):
 
 
 @pytest.mark.asyncio
-async def test_not_found(client):
+async def test_not_found(client, project_url):
     """Test handling of non-existent paths."""
-    response = await client.get("/memory/test/does-not-exist")
+    response = await client.get(f"{project_url}/memory/test/does-not-exist")
     assert response.status_code == 200
 
     context = GraphContext(**response.json())
@@ -106,9 +106,9 @@ async def test_not_found(client):
 
 
 @pytest.mark.asyncio
-async def test_recent_activity(client, test_graph):
+async def test_recent_activity(client, test_graph, project_url):
     """Test handling of recent activity."""
-    response = await client.get("/memory/recent")
+    response = await client.get(f"{project_url}/memory/recent")
     assert response.status_code == 200
 
     context = GraphContext(**response.json())
@@ -117,9 +117,9 @@ async def test_recent_activity(client, test_graph):
 
 
 @pytest.mark.asyncio
-async def test_recent_activity_pagination(client, test_graph):
+async def test_recent_activity_pagination(client, test_graph, project_url):
     """Test pagination for recent activity."""
-    response = await client.get("/memory/recent?page=1&page_size=1")
+    response = await client.get(f"{project_url}/memory/recent?page=1&page_size=1")
     assert response.status_code == 200
 
     context = GraphContext(**response.json())
@@ -129,14 +129,14 @@ async def test_recent_activity_pagination(client, test_graph):
 
 
 @pytest.mark.asyncio
-async def test_recent_activity_by_type(client, test_graph):
+async def test_recent_activity_by_type(client, test_graph, project_url):
     """Test filtering recent activity by type."""
-    response = await client.get("/memory/recent?type=relation&type=observation")
+    response = await client.get(f"{project_url}/memory/recent?type=relation&type=observation")
     assert response.status_code == 200
 
     context = GraphContext(**response.json())
     assert len(context.results) > 0
-    
+
     # Check for relation and observation types in primary results
     primary_types = [item.primary_result.type for item in context.results]
     assert "relation" in primary_types or "observation" in primary_types
