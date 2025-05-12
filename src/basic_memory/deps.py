@@ -2,7 +2,7 @@
 
 from typing import Annotated, Optional, Union
 
-from fastapi import Depends, Query, HTTPException, status
+from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     AsyncEngine,
@@ -80,17 +80,20 @@ async def get_project_repository(
 
 ProjectRepositoryDep = Annotated[ProjectRepository, Depends(get_project_repository)]
 
+from fastapi import Path
+
+ProjectPathDep = Annotated[str, Path()]  # Use Path dependency to extract from URL
 
 async def get_project_id(
-    project: Optional[Union[str, int]],
     project_repository: ProjectRepositoryDep,
+    project: ProjectPathDep,
 ) -> int:
-    """Get the current project ID based on request parameters.
+    """Get the current project ID based on path parameters.
 
-    If no project is specified, returns the default project.
+    If no project is specified in the path, returns the default project.
 
     Args:
-        project: Project name or ID from request query parameter
+        project: Project name or ID from path parameter (extracted via dependency)
         project_repository: Repository for project operations
 
     Returns:
@@ -185,7 +188,7 @@ SearchRepositoryDep = Annotated[SearchRepository, Depends(get_search_repository)
 def get_project_info_repository(
     session_maker: SessionMakerDep,
     project_id: ProjectIdDep,
-):
+) -> ProjectInfoRepository:
     """Dependency for ProjectInfoRepository."""
     return ProjectInfoRepository(session_maker, project_id=project_id)
 

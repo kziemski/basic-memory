@@ -21,9 +21,14 @@ async def test_create_entity(client: AsyncClient, file_service):
         "folder": "test",
         "entity_type": "test",
         "content": "TestContent",
+        "project": "Test Project Context"
     }
     # Create an entity
-    response = await client.post("/knowledge/entities", json=data)
+    print(f"Requesting with data: {data}")
+    response = await client.post("/knowledge/Test Project Context/entities", json=data)
+    # Print response for debugging
+    print(f"Response status: {response.status_code}")
+    print(f"Response content: {response.text}")
     # Verify creation
     assert response.status_code == 200
     entity = EntityResponse.model_validate(response.json())
