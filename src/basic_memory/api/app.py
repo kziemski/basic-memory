@@ -4,8 +4,6 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.exception_handlers import http_exception_handler
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
 from loguru import logger
 
 from basic_memory import __version__ as version
@@ -22,7 +20,6 @@ from basic_memory.api.routers import (
     prompt_router,
 )
 from basic_memory.config import config as project_config
-from basic_memory.repository.project_repository import ProjectRepository
 from basic_memory.services.initialization import initialize_app
 
 
