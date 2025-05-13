@@ -10,14 +10,14 @@ from typing import Optional
 from loguru import logger
 
 from basic_memory import db
-from basic_memory.config import ProjectConfig, config_manager
+from basic_memory.config import ProjectConfig, config_manager, BasicMemoryConfig
 from basic_memory.sync import WatchService
 
 # Import this inside functions to avoid circular imports
 # from basic_memory.cli.commands.sync import get_sync_service
 
 
-async def initialize_database(app_config: ProjectConfig) -> None:
+async def initialize_database(app_config: BasicMemoryConfig) -> None:
     """Run database migrations to ensure schema is up to date.
 
     Args:
