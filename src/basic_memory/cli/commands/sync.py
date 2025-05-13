@@ -28,6 +28,7 @@ from basic_memory.services.search_service import SearchService
 from basic_memory.sync import SyncService
 from basic_memory.sync.sync_service import SyncReport
 from basic_memory.sync.watch_service import WatchService
+from basic_memory.config import app_config
 
 console = Console()
 
@@ -70,7 +71,7 @@ async def get_sync_service():  # pragma: no cover
 
     # Create sync service
     sync_service = SyncService(
-        config=config,
+        app_config=app_config,
         entity_service=entity_service,
         entity_parser=entity_parser,
         entity_repository=entity_repository,

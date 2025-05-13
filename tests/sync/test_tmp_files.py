@@ -17,11 +17,11 @@ async def create_test_file(path: Path, content: str = "test content") -> None:
 async def test_temp_file_filter(watch_service):
     """Test that .tmp files are correctly filtered out."""
     # Test filter_changes method directly
-    tmp_path = str(watch_service.config.home / "test.tmp")
+    tmp_path = str(watch_service.project_config.home / "test.tmp")
     assert not watch_service.filter_changes(Change.added, tmp_path)
 
     # Test with valid file
-    valid_path = str(watch_service.config.home / "test.md")
+    valid_path = str(watch_service.project_config.home / "test.md")
     assert watch_service.filter_changes(Change.added, valid_path)
 
 

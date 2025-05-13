@@ -34,16 +34,21 @@ from basic_memory.services.link_resolver import LinkResolver
 from basic_memory.services.search_service import SearchService
 from basic_memory.sync.sync_service import SyncService
 from basic_memory.sync.watch_service import WatchService
-
+from basic_memory.config import app_config as basic_memory_app_config  # noqa: F401
 
 @pytest.fixture
 def anyio_backend():
     return "asyncio"
 
 @pytest.fixture
+def project_root() -> Path:
+    return Path(__file__).parent.parent
+
+@pytest.fixture
 def app_config(test_config: ProjectConfig) -> BasicMemoryConfig:
     projects = {test_config.name: str(test_config.home)}
-    return BasicMemoryConfig(env="test", projects=projects, default_project=test_config.name)
+    app_config = BasicMemoryConfig(env="test", projects=projects, default_project=test_config.name)
+    return app_config
 
 @pytest.fixture
 def test_config(tmp_path) -> ProjectConfig:
@@ -181,7 +186,7 @@ def entity_parser(test_config):
 
 @pytest_asyncio.fixture
 async def sync_service(
-    test_config: ProjectConfig,
+    app_config: BasicMemoryConfig,
     entity_service: EntityService,
     entity_parser: EntityParser,
     entity_repository: EntityRepository,
@@ -191,7 +196,7 @@ async def sync_service(
 ) -> SyncService:
     """Create sync service for testing."""
     return SyncService(
-        config=test_config,
+        app_config=app_config,
         entity_service=entity_service,
         entity_repository=entity_repository,
         relation_repository=relation_repository,
@@ -384,15 +389,15 @@ def watch_service(sync_service, file_service, test_config):
 
 
 @pytest.fixture
-def test_files(test_config) -> dict[str, Path]:
+def test_files(test_config, project_root) -> dict[str, Path]:
     """Copy test files into the project directory.
 
     Returns a dict mapping file names to their paths in the project dir.
     """
     # Source files relative to tests directory
     source_files = {
-        "pdf": Path("tests/Non-MarkdownFileSupport.pdf"),
-        "image": Path("tests/Screenshot.png"),
+        "pdf": Path(project_root / "tests/Non-MarkdownFileSupport.pdf"),
+        "image": Path(project_root / "tests/Screenshot.png"),
     }
 
     # Create copies in temp project directory

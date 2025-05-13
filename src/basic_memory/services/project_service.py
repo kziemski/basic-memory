@@ -3,12 +3,13 @@
 import json
 import os
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, Optional
 
 from loguru import logger
 from sqlalchemy import text
 
-from basic_memory.config import ConfigManager, config, ProjectConfig
+from basic_memory.config import ConfigManager, config, ProjectConfig, app_config
 from basic_memory.repository.project_repository import ProjectRepository
 from basic_memory.schemas import (
     ActivityMetrics,
@@ -376,13 +377,13 @@ class ProjectService:
         import basic_memory
 
         # Get database information
-        db_path = config.database_path
+        db_path = app_config.database_path
         db_size = db_path.stat().st_size if db_path.exists() else 0
         db_size_readable = f"{db_size / (1024 * 1024):.2f} MB"
 
         # Get watch service status if available
         watch_status = None
-        watch_status_path = config.home / ".basic-memory" / WATCH_STATUS_JSON
+        watch_status_path = Path.home() / ".basic-memory" / WATCH_STATUS_JSON
         if watch_status_path.exists():
             try:
                 watch_status = json.loads(watch_status_path.read_text(encoding="utf-8"))

@@ -34,7 +34,7 @@ from basic_memory.services.file_service import FileService
 from basic_memory.services.link_resolver import LinkResolver
 from basic_memory.services.search_service import SearchService
 from basic_memory.sync import SyncService
-
+from basic_memory.config import app_config
 
 ## project
 
@@ -276,7 +276,7 @@ async def get_sync_service(
     :rtype: object
     """
     return SyncService(
-        config=config,
+        app_config=app_config,
         entity_service=entity_service,
         entity_parser=entity_parser,
         entity_repository=entity_repository,

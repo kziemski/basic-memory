@@ -10,7 +10,7 @@ from typing import Dict, Optional, Set, Tuple
 from loguru import logger
 from sqlalchemy.exc import IntegrityError
 
-from basic_memory.config import ProjectConfig
+from basic_memory.config import BasicMemoryConfig
 from basic_memory.file_utils import has_frontmatter
 from basic_memory.markdown import EntityParser
 from basic_memory.models import Entity
@@ -64,7 +64,7 @@ class SyncService:
 
     def __init__(
         self,
-        config: ProjectConfig,
+        app_config: BasicMemoryConfig,
         entity_service: EntityService,
         entity_parser: EntityParser,
         entity_repository: EntityRepository,
@@ -72,7 +72,7 @@ class SyncService:
         search_service: SearchService,
         file_service: FileService,
     ):
-        self.config = config
+        self.app_config = app_config
         self.entity_service = entity_service
         self.entity_parser = entity_parser
         self.entity_repository = entity_repository
@@ -378,7 +378,7 @@ class SyncService:
             updates = {"file_path": new_path}
 
             # If configured, also update permalink to match new path
-            if self.config.update_permalinks_on_move:
+            if self.app_config.update_permalinks_on_move:
                 # generate new permalink value
                 new_permalink = await self.entity_service.resolve_permalink(new_path)
 
