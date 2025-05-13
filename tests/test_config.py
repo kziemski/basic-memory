@@ -11,7 +11,9 @@ from basic_memory.config import (
     ProjectConfig,
     DATA_DIR_NAME,
     CONFIG_FILE_NAME,
-    APP_DATABASE_NAME
+    APP_DATABASE_NAME,
+    get_project_config,
+    config_manager as module_config_manager,
 )
 
 
@@ -24,7 +26,7 @@ class TestBasicMemoryConfig:
         assert "main" in config.projects
         assert config.default_project == "main"
 
-    def test_model_post_init(self):
+    def test_model_post_init(self, tmp_path):
         """Test that model_post_init ensures valid configuration."""
         # Test with empty projects
         config = BasicMemoryConfig(projects={}, default_project="nonexistent")
@@ -33,17 +35,17 @@ class TestBasicMemoryConfig:
 
         # Test with invalid default project
         config = BasicMemoryConfig(
-            projects={"project1": "/path/to/project1"}, default_project="nonexistent"
+            projects={"project1": f"{tmp_path}/path/to/project1"}, default_project="nonexistent"
         )
         assert "main" in config.projects
         assert config.default_project == "main"
 
-    def test_custom_values(self):
+    def test_custom_values(self, tmp_path):
         """Test with custom values."""
         config = BasicMemoryConfig(
-            projects={"project1": "/path/to/project1"}, default_project="project1"
+            projects={"project1": f"{tmp_path}/path/to/project1"}, default_project="project1"
         )
-        assert config.projects["project1"] == "/path/to/project1"
+        assert config.projects["project1"] == f"{tmp_path}/path/to/project1"
         assert config.default_project == "project1"
         # Main should still be added automatically
         assert "main" in config.projects
@@ -64,6 +66,18 @@ class TestBasicMemoryConfig:
             # The path should point to the app directory, not project directory
             assert config.app_database_path.parent == temp_home / DATA_DIR_NAME
 
+    def test_database_path(self, monkeypatch):
+        """Test that database_path returns the app-level database path."""
+        with TemporaryDirectory() as tempdir:
+            temp_home = Path(tempdir)
+            monkeypatch.setattr(Path, "home", lambda: temp_home)
+
+            # Create a test configuration
+            app_config = BasicMemoryConfig(env="test")
+
+            # The database_path should point to the app-level database
+            app_db_path = temp_home / DATA_DIR_NAME / APP_DATABASE_NAME
+            assert app_config.database_path == app_db_path
 
 class TestConfigManager:
     """Test the ConfigManager class."""
@@ -120,28 +134,34 @@ class TestConfigManager:
         config_manager.add_project("test", str(temp_home / "test-project"))
 
         # Get by name
-        path = config_manager.get_project_path("test")
+        path = config_manager.config.get_project_path(project_name="test")
         assert path == temp_home / "test-project"
 
         # Get default
-        path = config_manager.get_project_path()
+        path = config_manager.config.get_project_path()
         assert path == temp_home / "basic-memory"
 
         # Project does not exist
         with pytest.raises(ValueError):
-            config_manager.get_project_path("nonexistent")
+            config_manager.config.get_project_path("nonexistent")
 
     def test_environment_variable(self, temp_home, monkeypatch):
         """Test using environment variable to select project."""
-        config_manager = ConfigManager()
-        config_manager.add_project("env_test", str(temp_home / "env-test-project"))
+
+        # override the home path for the config manager
+        config_manager = module_config_manager
+        config_manager.config_dir = temp_home / ".basic-memory"
+        config_manager.config_file = config_manager.config_dir / CONFIG_FILE_NAME
+
+        # add a project
+        config_manager.add_project("env_test", str(temp_home / "env_test"))
 
         # Set environment variable
         monkeypatch.setenv("BASIC_MEMORY_PROJECT", "env_test")
 
         # Get project without specifying name
-        path = config_manager.get_project_path()
-        assert path == temp_home / "env-test-project"
+        path = get_project_config().home
+        assert str(path) == str (temp_home / "env_test")
 
     def test_remove_project(self, temp_home):
         """Test removing a project."""
@@ -188,23 +208,3 @@ class TestConfigManager:
 
         # Should not raise exception
         config_manager.save_config(config_manager.config)
-
-
-class TestProjectConfig:
-    """Test the ProjectConfig class."""
-
-    def test_database_path(self, monkeypatch):
-        """Test that database_path returns the app-level database path."""
-        with TemporaryDirectory() as tempdir:
-            temp_home = Path(tempdir)
-            monkeypatch.setattr(Path, "home", lambda: temp_home)
-
-            # Create a test configuration
-            project_config = ProjectConfig(
-                project="test-project",
-                home=Path(tempdir) / "test-project"
-            )
-
-            # The database_path should point to the app-level database
-            app_db_path = temp_home / DATA_DIR_NAME / APP_DATABASE_NAME
-            assert project_config.database_path == app_db_path

@@ -11,7 +11,7 @@ from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from basic_memory import db
-from basic_memory.config import ProjectConfig
+from basic_memory.config import ProjectConfig, BasicMemoryConfig
 from basic_memory.db import DatabaseType
 from basic_memory.markdown import EntityParser
 from basic_memory.markdown.markdown_processor import MarkdownProcessor
@@ -40,14 +40,17 @@ from basic_memory.sync.watch_service import WatchService
 def anyio_backend():
     return "asyncio"
 
+@pytest.fixture
+def app_config(test_config: ProjectConfig) -> BasicMemoryConfig:
+    projects = {test_config.name: str(test_config.home)}
+    return BasicMemoryConfig(env="test", projects=projects, default_project=test_config.name)
 
 @pytest.fixture
 def test_config(tmp_path) -> ProjectConfig:
     """Test configuration using in-memory DB."""
     config = ProjectConfig(
-        project="test-project",
+        name="test-project", home=tmp_path
     )
-    config.home = tmp_path
 
     (tmp_path / config.home.name).mkdir(parents=True, exist_ok=True)
     logger.info(f"project config home: {config.home}")
@@ -56,11 +59,11 @@ def test_config(tmp_path) -> ProjectConfig:
 
 @pytest_asyncio.fixture(scope="function")
 async def engine_factory(
-    test_config,
+    app_config,
 ) -> AsyncGenerator[tuple[AsyncEngine, async_sessionmaker[AsyncSession]], None]:
-    """Create engine and session factory using in-memory SQLite database."""
+    """Create an engine and session factory using an in-memory SQLite database."""
     async with db.engine_session_factory(
-        db_path=test_config.database_path, db_type=DatabaseType.MEMORY
+        db_path=app_config.database_path, db_type=DatabaseType.MEMORY
     ) as (engine, session_maker):
         # Create all tables for the DB the engine is connected to
         async with engine.begin() as conn:
