@@ -76,14 +76,23 @@ class SystemStatus(BaseModel):
     timestamp: datetime = Field(description="Timestamp when the information was collected")
 
 
+class ProjectDetail(BaseModel):
+    """Detailed information about a project."""
+    
+    path: str = Field(description="Path to the project directory")
+    active: bool = Field(description="Whether the project is active")
+    id: Optional[int] = Field(description="Database ID of the project if available")
+    is_default: bool = Field(description="Whether this is the default project")
+    permalink: str = Field(description="URL-friendly identifier for the project")
+
 class ProjectInfoResponse(BaseModel):
     """Response for the project_info tool."""
 
     # Project configuration
     project_name: str = Field(description="Name of the current project")
     project_path: str = Field(description="Path to the current project files")
-    available_projects: Dict[str, str] = Field(
-        description="Map of configured project names to paths"
+    available_projects: Dict[str, Dict[str, Any]] = Field(
+        description="Map of configured project names to detailed project information"
     )
     default_project: str = Field(description="Name of the default project")
 
@@ -166,7 +175,7 @@ class ProjectWatchStatus(BaseModel):
     )
 
 
-class ProjectSwitchResponse(BaseModel):
+class ProjectStatusResponse(BaseModel):
     """Response model for switching projects."""
 
     message: str = Field(..., description="Status message about the project switch")

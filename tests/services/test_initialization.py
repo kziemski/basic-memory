@@ -88,21 +88,19 @@ def test_ensure_initialization(mock_run, test_config):
 @pytest.mark.asyncio
 @patch("basic_memory.services.initialization.db.get_or_create_db")
 async def test_reconcile_projects_with_config(mock_get_db, app_config):
-    """Test reconciling projects from config with database."""
+    """Test reconciling projects from config with database using ProjectService."""
     # Setup mocks
     mock_session_maker = AsyncMock()
     mock_get_db.return_value = (None, mock_session_maker)
     
     mock_repository = AsyncMock()
-    mock_project = MagicMock()
-    mock_project.name = "test_project"
-    mock_project.id = 1
+    mock_project_service = AsyncMock()
+    mock_project_service.synchronize_projects = AsyncMock()
     
-    # Mock the repository and its methods
-    with patch("basic_memory.services.initialization.ProjectRepository") as mock_repo_class:
+    # Mock the repository and project service
+    with patch("basic_memory.services.initialization.ProjectRepository") as mock_repo_class, \
+         patch("basic_memory.services.project_service.ProjectService", return_value=mock_project_service):
         mock_repo_class.return_value = mock_repository
-        mock_repository.find_all.return_value = [mock_project]
-        mock_repository.get_by_name.return_value = mock_project
         
         # Set up app_config projects as a dictionary
         app_config.projects = {"test_project": "/path/to/project", "new_project": "/path/to/new"}
@@ -113,34 +111,47 @@ async def test_reconcile_projects_with_config(mock_get_db, app_config):
         
         # Assertions
         mock_get_db.assert_called_once()
-        mock_repository.find_all.assert_called_once()
-        assert mock_repository.create.call_count == 1
-        mock_repository.set_as_default.assert_called_once_with(project_id=mock_project.id)
+        mock_repo_class.assert_called_once_with(mock_session_maker)
+        mock_project_service.synchronize_projects.assert_called_once()
+        
+        # We should no longer be calling these directly since we're using the service
+        mock_repository.find_all.assert_not_called()
+        mock_repository.set_as_default.assert_not_called()
 
 
 @pytest.mark.asyncio
 @patch("basic_memory.services.initialization.db.get_or_create_db")
-async def test_reconcile_projects_with_missing_default(mock_get_db, app_config):
-    """Test reconciling projects with missing default project."""
+async def test_reconcile_projects_with_error_handling(mock_get_db, app_config):
+    """Test error handling during project synchronization."""
     # Setup mocks
     mock_session_maker = AsyncMock()
     mock_get_db.return_value = (None, mock_session_maker)
     
     mock_repository = AsyncMock()
+    mock_project_service = AsyncMock()
+    mock_project_service.synchronize_projects = AsyncMock(side_effect=ValueError("Project synchronization error"))
     
-    # Mock the repository and its methods
-    with patch("basic_memory.services.initialization.ProjectRepository") as mock_repo_class:
+    # Mock the repository and project service
+    with patch("basic_memory.services.initialization.ProjectRepository") as mock_repo_class, \
+         patch("basic_memory.services.project_service.ProjectService", return_value=mock_project_service), \
+         patch("basic_memory.services.initialization.logger") as mock_logger:
         mock_repo_class.return_value = mock_repository
-        mock_repository.find_all.return_value = []
-        mock_repository.get_by_name.return_value = None
         
         # Set up app_config projects as a dictionary
         app_config.projects = {"test_project": "/path/to/project"}
         app_config.default_project = "missing_project"
         
-        # Run the function and assert it raises an error
-        with pytest.raises(ValueError, match="Default project missing_project not found in database"):
-            await reconcile_projects_with_config(app_config)
+        # Run the function which now has error handling
+        await reconcile_projects_with_config(app_config)
+        
+        # Assertions
+        mock_get_db.assert_called_once()
+        mock_repo_class.assert_called_once_with(mock_session_maker)
+        mock_project_service.synchronize_projects.assert_called_once()
+        
+        # Verify error was logged
+        mock_logger.error.assert_called_once_with("Error during project synchronization: Project synchronization error")
+        mock_logger.info.assert_any_call("Continuing with initialization despite synchronization error")
 
 
 @pytest.mark.asyncio

@@ -10,6 +10,7 @@ from loguru import logger
 from sqlalchemy import text
 
 from basic_memory.config import ConfigManager, config, ProjectConfig, app_config
+from basic_memory.models.project import Project
 from basic_memory.repository.project_repository import ProjectRepository
 from basic_memory.schemas import (
     ActivityMetrics,
@@ -56,8 +57,8 @@ class ProjectService:
         """
         return os.environ.get("BASIC_MEMORY_PROJECT", self.config_manager.default_project)
 
-    def add_project(self, name: str, path: str) -> None:
-        """Add a new project to the configuration.
+    async def add_project(self, name: str, path: str) -> None:
+        """Add a new project to the configuration and database.
 
         Args:
             name: The name of the project
@@ -66,13 +67,29 @@ class ProjectService:
         Raises:
             ValueError: If the project already exists
         """
+        if not self.repository:
+            raise ValueError("Repository is required for add_project")
+
         # Resolve to absolute path
         resolved_path = os.path.abspath(os.path.expanduser(path))
+
+        # First add to config file (this will validate the project doesn't exist)
         self.config_manager.add_project(name, resolved_path)
+
+        # Then add to database
+        project_data = {
+            "name": name,
+            "path": resolved_path,
+            "permalink": name.lower().replace(" ", "-"),
+            "is_active": True,
+            "is_default": False,
+        }
+        await self.repository.create(project_data)
+
         logger.info(f"Project '{name}' added at {resolved_path}")
 
-    def remove_project(self, name: str) -> None:
-        """Remove a project from configuration.
+    async def remove_project(self, name: str) -> None:
+        """Remove a project from configuration and database.
 
         Args:
             name: The name of the project to remove
@@ -80,12 +97,21 @@ class ProjectService:
         Raises:
             ValueError: If the project doesn't exist or is the default project
         """
-        self.config_manager.remove_project(name)
-        logger.info(f"Project '{name}' removed from configuration")
+        if not self.repository:
+            raise ValueError("Repository is required for remove_project")
 
-    
-    def set_default_project(self, name: str) -> None:
-        """Set the default project.
+        # First remove from config (this will validate the project exists and is not default)
+        self.config_manager.remove_project(name)
+
+        # Then remove from database
+        project = await self.repository.get_by_name(name)
+        if project:
+            await self.repository.delete(project.id)
+
+        logger.info(f"Project '{name}' removed from configuration and database")
+
+    async def set_default_project(self, name: str) -> None:
+        """Set the default project in configuration and database.
 
         Args:
             name: The name of the project to set as default
@@ -93,9 +119,134 @@ class ProjectService:
         Raises:
             ValueError: If the project doesn't exist
         """
-        # Set the default project
+        if not self.repository:
+            raise ValueError("Repository is required for set_default_project")
+
+        # First update config file (this will validate the project exists)
         self.config_manager.set_default_project(name)
-        logger.info(f"Project '{name}' set as default")
+
+        # Then update database
+        project = await self.repository.get_by_name(name)
+        if project:
+            await self.repository.set_as_default(project.id)
+        else:
+            logger.error(f"Project '{name}' exists in config but not in database")
+
+        logger.info(f"Project '{name}' set as default in configuration and database")
+
+    async def synchronize_projects(self) -> None:
+        """Synchronize projects between database and configuration.
+
+        Ensures that all projects in the configuration file exist in the database
+        and vice versa. This should be called during initialization to reconcile
+        any differences between the two sources.
+        """
+        if not self.repository:
+            raise ValueError("Repository is required for synchronize_projects")
+
+        logger.info("Synchronizing projects between database and configuration")
+
+        # Get all projects from database
+        db_projects = await self.repository.get_active_projects()
+        db_projects_by_name = {p.name: p for p in db_projects}
+
+        # Get all projects from configuration
+        config_projects = self.config_manager.projects
+
+        # Add projects that exist in config but not in DB
+        for name, path in config_projects.items():
+            if name not in db_projects_by_name:
+                logger.info(f"Adding project '{name}' to database")
+                project_data = {
+                    "name": name,
+                    "path": path,
+                    "permalink": name.lower().replace(" ", "-"),
+                    "is_active": True,
+                    "is_default": (name == self.config_manager.default_project),
+                }
+                await self.repository.create(project_data)
+
+        # Add projects that exist in DB but not in config to config
+        for name, project in db_projects_by_name.items():
+            if name not in config_projects:
+                logger.info(f"Adding project '{name}' to configuration")
+                self.config_manager.add_project(name, project.path)
+
+        # Make sure default project is synchronized
+        db_default = next((p for p in db_projects if p.is_default), None)
+        config_default = self.config_manager.default_project
+
+        if db_default and db_default.name != config_default:
+            # Update config to match DB default
+            logger.info(f"Updating default project in config to '{db_default.name}'")
+            self.config_manager.set_default_project(db_default.name)
+        elif not db_default and config_default in db_projects_by_name:
+            # Update DB to match config default
+            logger.info(f"Updating default project in database to '{config_default}'")
+            project = db_projects_by_name[config_default]
+            await self.repository.set_as_default(project.id)
+
+        logger.info("Project synchronization complete")
+
+    async def update_project(
+        self, name: str, updated_path: Optional[str] = None, is_active: Optional[bool] = None
+    ) -> None:
+        """Update project information in both config and database.
+
+        Args:
+            name: The name of the project to update
+            updated_path: Optional new path for the project
+            is_active: Optional flag to set project active status
+
+        Raises:
+            ValueError: If project doesn't exist or repository isn't initialized
+        """
+        if not self.repository:
+            raise ValueError("Repository is required for update_project")
+
+        # Validate project exists in config
+        if name not in self.config_manager.projects:
+            raise ValueError(f"Project '{name}' not found in configuration")
+
+        # Get project from database
+        project = await self.repository.get_by_name(name)
+        if not project:
+            logger.error(f"Project '{name}' exists in config but not in database")
+            return
+
+        # Update path if provided
+        if updated_path:
+            resolved_path = os.path.abspath(os.path.expanduser(updated_path))
+
+            # Update in config
+            projects = self.config_manager.config.projects.copy()
+            projects[name] = resolved_path
+            self.config_manager.config.projects = projects
+            self.config_manager.save_config(self.config_manager.config)
+
+            # Update in database
+            project.path = resolved_path
+            await self.repository.update(project)
+
+            logger.info(f"Updated path for project '{name}' to {resolved_path}")
+
+        # Update active status if provided
+        if is_active is not None:
+            project.is_active = is_active
+            await self.repository.update(project)
+            logger.info(f"Set active status for project '{name}' to {is_active}")
+
+        # If project was made inactive and it was the default, we need to pick a new default
+        if is_active is False and project.is_default:
+            # Find another active project
+            active_projects = await self.repository.get_active_projects()
+            if active_projects:
+                new_default = active_projects[0]
+                await self.repository.set_as_default(new_default.id)
+                self.config_manager.set_default_project(new_default.name)
+                logger.info(
+                    f"Changed default project to '{new_default.name}' as '{name}' was deactivated"
+                )
 
     async def get_project_info(self) -> ProjectInfoResponse:
         """Get comprehensive information about the current Basic Memory project.
@@ -115,17 +266,34 @@ class ProjectService:
         # Get system status
         system = self.get_system_status()
 
-        # Get project configuration information
+        # Get current project information from config
         project_name = config.project
         project_path = str(config.home)
-        available_projects = self.config_manager.projects
+
+        # Get enhanced project information from database
+        db_projects = await self.repository.get_active_projects()
+        db_projects_by_name = {p.name: p for p in db_projects}
+
+        # Get default project info
         default_project = self.config_manager.default_project
+
+        # Convert config projects to include database info
+        enhanced_projects = {}
+        for name, path in self.config_manager.projects.items():
+            db_project = db_projects_by_name.get(name)
+            enhanced_projects[name] = {
+                "path": path,
+                "active": db_project.is_active if db_project else True,
+                "id": db_project.id if db_project else None,
+                "is_default": (name == default_project),
+                "permalink": db_project.permalink if db_project else name.lower().replace(" ", "-"),
+            }
 
         # Construct the response
         return ProjectInfoResponse(
             project_name=project_name,
             project_path=project_path,
-            available_projects=available_projects,
+            available_projects=enhanced_projects,
             default_project=default_project,
             statistics=statistics,
             activity=activity,

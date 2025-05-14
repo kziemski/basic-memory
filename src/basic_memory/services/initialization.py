@@ -35,11 +35,13 @@ async def initialize_database(app_config: BasicMemoryConfig) -> None:
 
 
 async def reconcile_projects_with_config(app_config: BasicMemoryConfig):
-    """Ensure all projects in config.json exist in the projects table.
+    """Ensure all projects in config.json exist in the projects table and vice versa.
+
+    This uses the ProjectService's synchronize_projects method to ensure bidirectional
+    synchronization between the configuration file and the database.
 
     Args:
         app_config: The Basic Memory application configuration
-        project_repository: Repository for project operations
     """
     logger.info("Reconciling projects from config with database...")
 
@@ -48,33 +50,19 @@ async def reconcile_projects_with_config(app_config: BasicMemoryConfig):
         db_path=app_config.database_path, db_type=db.DatabaseType.FILESYSTEM
     )
     project_repository = ProjectRepository(session_maker)
-
-    # Get all projects from database by name
-    db_projects = await project_repository.find_all()
-    db_projects_by_name = defaultdict(list)
-    for project in db_projects:
-        db_projects_by_name[project.name].append(project)
-
-    # Get all configured projects
-    for project_name, project_path in app_config.projects.items():
-        project = db_projects_by_name.get(project_name)
-        if not project:
-            # Create project if it doesn't exist
-            project_data = {
-                "name": project_name,
-                "path": project_path,
-                "is_active": True,
-            }
-            project = await project_repository.create(project_data)
-            logger.info(f"Created new project: {project_name}, path: {project_path}")
-
-    # set default project
-    default_project = app_config.default_project
-    project = await project_repository.get_by_name(default_project)
-    if not project:
-        raise ValueError(f"Default project {default_project} not found in database")
-
-    await project_repository.set_as_default(project_id = project.id)
+    
+    # Import ProjectService here to avoid circular imports
+    from basic_memory.services.project_service import ProjectService
+    
+    try:
+        # Create project service and synchronize projects
+        project_service = ProjectService(repository=project_repository)
+        await project_service.synchronize_projects()
+        logger.info("Projects successfully reconciled between config and database")
+    except Exception as e:
+        # Log the error but continue with initialization
+        logger.error(f"Error during project synchronization: {e}")
+        logger.info("Continuing with initialization despite synchronization error")
 
 
 

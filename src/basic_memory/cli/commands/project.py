@@ -266,9 +266,10 @@ def display_project_info(
             projects_table.add_column("Path", style="cyan")
             projects_table.add_column("Default", style="green")
 
-            for name, path in info.available_projects.items():
+            for name, proj_info in info.available_projects.items():
                 is_default = name == info.default_project
-                projects_table.add_row(name, path, "✓" if is_default else "")
+                project_path = proj_info["path"]
+                projects_table.add_row(name, project_path, "✓" if is_default else "")
 
             console.print(projects_table)
 

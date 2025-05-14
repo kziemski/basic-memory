@@ -22,7 +22,22 @@ async def test_project_info_tool():
     sample_data = {
         "project_name": "test",
         "project_path": "/path/to/test",
-        "available_projects": {"test": "/path/to/test", "other": "/path/to/other"},
+        "available_projects": {
+            "test": {
+                "path": "/path/to/test", 
+                "active": True,
+                "id": 1,
+                "is_default": True,
+                "permalink": "test"
+            }, 
+            "other": {
+                "path": "/path/to/other",
+                "active": False,
+                "id": 2,
+                "is_default": False,
+                "permalink": "other"
+            }
+        },
         "default_project": "test",
         "statistics": {
             "total_entities": 42,
