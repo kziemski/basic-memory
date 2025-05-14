@@ -111,6 +111,7 @@ class ProjectSwitchRequest(BaseModel):
     """Request model for switching projects."""
 
     name: str = Field(..., description="Name of the project to switch to")
+    path: str = Field(..., description="Path to the project directory")
     set_default: bool = Field(..., description="Set the project as the default")
 
 

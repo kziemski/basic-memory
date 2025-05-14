@@ -75,6 +75,7 @@ def mock_sync_service():
     mock_service.entity_service.file_service = MagicMock()
     return mock_service
 
+
 @pytest.fixture
 def mock_project_repository():
     """Create a mock ProjectRepository."""
@@ -83,7 +84,9 @@ def mock_project_repository():
 
 
 @pytest.mark.asyncio
-async def test_start_watch_service_when_not_running(mock_app, mock_sync_service, mock_project_repository):
+async def test_start_watch_service_when_not_running(
+    mock_app, mock_sync_service, mock_project_repository
+):
     """Test starting watch service when it's not running."""
     # Set up app state
     mock_app.state.watch_task = None
@@ -106,7 +109,9 @@ async def test_start_watch_service_when_not_running(mock_app, mock_sync_service,
         mock_watch_service_class.return_value = mock_watch_service
 
         # Call endpoint directly
-        response = await start_watch_service(mock_request, mock_project_repository, mock_sync_service)  # pyright: ignore [reportCallIssue]
+        response = await start_watch_service(
+            mock_request, mock_project_repository, mock_sync_service
+        )  # pyright: ignore [reportCallIssue]
 
         # Verify response
         assert isinstance(response, WatchStatusResponse)
@@ -117,7 +122,9 @@ async def test_start_watch_service_when_not_running(mock_app, mock_sync_service,
 
 
 @pytest.mark.asyncio
-async def test_start_watch_service_already_running(mock_app, mock_sync_service, mock_project_repository):
+async def test_start_watch_service_already_running(
+    mock_app, mock_sync_service, mock_project_repository
+):
     """Test starting watch service when it's already running."""
     # Create a mock task that reports as running
     mock_task = MagicMock()
@@ -131,7 +138,9 @@ async def test_start_watch_service_already_running(mock_app, mock_sync_service, 
 
     with patch("basic_memory.sync.background_sync.create_background_sync_task") as mock_create_task:
         # Call endpoint directly
-        response = await start_watch_service(mock_request, mock_project_repository, mock_sync_service)
+        response = await start_watch_service(
+            mock_request, mock_project_repository, mock_sync_service
+        )
 
         # Verify response
         assert isinstance(response, WatchStatusResponse)

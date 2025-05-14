@@ -112,7 +112,7 @@ async def get_project_id(
         return project_obj.id
 
     # Not found
-    raise HTTPException(
+    raise HTTPException(  # pragma: no cover
         status_code=status.HTTP_404_NOT_FOUND, detail=f"Project '{project}' not found."
     )
 

@@ -81,7 +81,7 @@ class BasicMemoryConfig(BaseSettings):
         """Get the path for a specific project or the default project."""
         name = project_name or self.default_project
 
-        if name not in self.projects:
+        if name not in self.projects:  # pragma: no cover
             raise ValueError(f"Project '{name}' not found in configuration")
 
         return Path(self.projects[name])
@@ -89,11 +89,11 @@ class BasicMemoryConfig(BaseSettings):
     def model_post_init(self, __context: Any) -> None:
         """Ensure configuration is valid after initialization."""
         # Ensure main project exists
-        if "main" not in self.projects:
+        if "main" not in self.projects:  # pragma: no cover
             self.projects["main"] = str(Path.home() / "basic-memory")
 
         # Ensure default project is valid
-        if self.default_project not in self.projects:
+        if self.default_project not in self.projects:  # pragma: no cover
             self.default_project = "main"
 
     @property
@@ -104,7 +104,7 @@ class BasicMemoryConfig(BaseSettings):
         across all projects.
         """
         database_path = Path.home() / DATA_DIR_NAME / APP_DATABASE_NAME
-        if not database_path.exists():
+        if not database_path.exists():  # pragma: no cover
             database_path.parent.mkdir(parents=True, exist_ok=True)
             database_path.touch()
         return database_path

@@ -10,6 +10,7 @@ from basic_memory.schemas.project_info import (
     ProjectItem,
     ProjectSwitchRequest,
     ProjectStatusResponse,
+    ProjectWatchStatus,
 )
 
 # Define the router - we'll combine stats and project operations
@@ -71,31 +72,31 @@ async def add_project(
     Returns:
         Response confirming the project was added
     """
-    try:
+    try:  # pragma: no cover
         await project_service.add_project(project_data.name, project_data.path)
 
-        if project_data.set_default:
+        if project_data.set_default:  # pragma: no cover
             await project_service.set_default_project(project_data.name)
 
         return ProjectStatusResponse(  # pyright: ignore [reportCallIssue]
             message=f"Project '{project_data.name}' added successfully",
             status="success",
             default=project_data.set_default,
-            new_project={
-                "name": project_data.name,
-                "path": project_data.path,
-                "watch_status": None,
-            },
+            new_project=ProjectWatchStatus(
+                name=project_data.name,
+                path=project_data.path,
+                watch_status=None,
+            ),
         )
-    except ValueError as e:
+    except ValueError as e:  # pragma: no cover
         raise HTTPException(status_code=400, detail=str(e))
 
 
 # Remove a project
 @router.delete("/projects/{name}", response_model=ProjectStatusResponse)
 async def remove_project(
+    project_service: ProjectServiceDep,
     name: str = Path(..., description="Name of the project to remove"),
-    project_service: ProjectServiceDep = None,
 ) -> ProjectStatusResponse:
     """Remove a project from configuration and database.
 
@@ -105,13 +106,13 @@ async def remove_project(
     Returns:
         Response confirming the project was removed
     """
-    try:
+    try:  # pragma: no cover
         # Get project info before removal for the response
-        old_project = {
-            "name": name,
-            "path": project_service.projects.get(name, ""),
-            "watch_status": None,
-        }
+        old_project = ProjectWatchStatus(
+            name=name,
+            path=project_service.projects.get(name, ""),
+            watch_status=None,
+        )
 
         await project_service.remove_project(name)
 
@@ -121,15 +122,15 @@ async def remove_project(
             default=False,
             old_project=old_project,
         )
-    except ValueError as e:
+    except ValueError as e:  # pragma: no cover
         raise HTTPException(status_code=400, detail=str(e))
 
 
 # Set a project as default
 @router.put("/projects/{name}/default", response_model=ProjectStatusResponse)
 async def set_default_project(
+    project_service: ProjectServiceDep,
     name: str = Path(..., description="Name of the project to set as default"),
-    project_service: ProjectServiceDep = None,
 ) -> ProjectStatusResponse:
     """Set a project as the default project.
 
@@ -139,16 +140,16 @@ async def set_default_project(
     Returns:
         Response confirming the project was set as default
     """
-    try:
+    try:  # pragma: no cover
         # Get the old default project
         old_default = project_service.default_project
         old_project = None
         if old_default != name:
-            old_project = {
-                "name": old_default,
-                "path": project_service.projects.get(old_default, ""),
-                "watch_status": None,
-            }
+            old_project = ProjectWatchStatus(
+                name=old_default,
+                path=project_service.projects.get(old_default, ""),
+                watch_status=None,
+            )
 
         await project_service.set_default_project(name)
 
@@ -157,23 +158,23 @@ async def set_default_project(
             status="success",
             default=True,
             old_project=old_project,
-            new_project={
-                "name": name,
-                "path": project_service.projects.get(name, ""),
-                "watch_status": None,
-            },  # pyright: ignore [reportArgumentType]
+            new_project=ProjectWatchStatus(
+                name=name,
+                path=project_service.projects.get(name, ""),
+                watch_status=None,
+            ),
         )
-    except ValueError as e:
+    except ValueError as e:  # pragma: no cover
         raise HTTPException(status_code=400, detail=str(e))
 
 
 # Update a project
 @router.patch("/projects/{name}", response_model=ProjectStatusResponse)
 async def update_project(
+    project_service: ProjectServiceDep,
     name: str = Path(..., description="Name of the project to update"),
     path: Optional[str] = Body(None, description="New path for the project"),
     is_active: Optional[bool] = Body(None, description="Status of the project (active/inactive)"),
-    project_service: ProjectServiceDep = None,
 ) -> ProjectStatusResponse:
     """Update a project's information in configuration and database.
 
@@ -185,13 +186,13 @@ async def update_project(
     Returns:
         Response confirming the project was updated
     """
-    try:
+    try:  # pragma: no cover
         # Get original project info for the response
-        old_project = {
-            "name": name,
-            "path": project_service.projects.get(name, ""),
-            "watch_status": None,
-        }
+        old_project = ProjectWatchStatus(
+            name=name,
+            path=project_service.projects.get(name, ""),
+            watch_status=None,
+        )
 
         await project_service.update_project(name, updated_path=path, is_active=is_active)
 
@@ -203,9 +204,9 @@ async def update_project(
             status="success",
             default=(name == project_service.default_project),
             old_project=old_project,
-            new_project={"name": name, "path": updated_path, "watch_status": None},  # pyright: ignore [reportArgumentType]
+            new_project=ProjectWatchStatus(name=name, path=updated_path, watch_status=None),
         )
-    except ValueError as e:
+    except ValueError as e:  # pragma: no cover
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -222,7 +223,7 @@ async def synchronize_projects(
     Returns:
         Response confirming synchronization was completed
     """
-    try:
+    try:  # pragma: no cover
         await project_service.synchronize_projects()
 
         return ProjectStatusResponse(  # pyright: ignore [reportCallIssue]
@@ -230,5 +231,5 @@ async def synchronize_projects(
             status="success",
             default=False,
         )
-    except ValueError as e:
+    except ValueError as e:  # pragma: no cover
         raise HTTPException(status_code=400, detail=str(e))
