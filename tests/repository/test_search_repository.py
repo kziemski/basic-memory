@@ -265,3 +265,39 @@ async def test_to_insert_includes_project_id(search_repository):
     # Verify project_id is included
     assert "project_id" in insert_data
     assert insert_data["project_id"] == search_repository.project_id
+
+
+def test_directory_property():
+    """Test the directory property of SearchIndexRow."""
+    # Test a file in a nested directory
+    row1 = SearchIndexRow(
+        id=1,
+        type=SearchItemType.ENTITY.value,
+        file_path="projects/notes/ideas.md",
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+        project_id=1,
+    )
+    assert row1.directory == "/projects/notes"
+    
+    # Test a file at the root level
+    row2 = SearchIndexRow(
+        id=2,
+        type=SearchItemType.ENTITY.value,
+        file_path="README.md",
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+        project_id=1,
+    )
+    assert row2.directory == "/"
+    
+    # Test a non-entity type with empty file_path
+    row3 = SearchIndexRow(
+        id=3,
+        type=SearchItemType.OBSERVATION.value,
+        file_path="",
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc),
+        project_id=1,
+    )
+    assert row3.directory == ""

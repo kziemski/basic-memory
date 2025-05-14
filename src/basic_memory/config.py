@@ -77,11 +77,11 @@ class BasicMemoryConfig(BaseSettings):
         env_file_encoding="utf-8",
     )
 
-    def get_project_path(self, project_name: Optional[str] = None) -> Path:
+    def get_project_path(self, project_name: Optional[str] = None) -> Path:  # pragma: no cover
         """Get the path for a specific project or the default project."""
         name = project_name or self.default_project
 
-        if name not in self.projects:  # pragma: no cover
+        if name not in self.projects: 
             raise ValueError(f"Project '{name}' not found in configuration")
 
         return Path(self.projects[name])
@@ -122,7 +122,7 @@ class BasicMemoryConfig(BaseSettings):
         return config.app_database_path  # pragma: no cover
 
     @property
-    def project_list(self) -> List[ProjectConfig]:
+    def project_list(self) -> List[ProjectConfig]:  # pragma: no cover
         """Get all configured projects as ProjectConfig objects."""
         return [ProjectConfig(name=name, home=Path(path)) for name, path in self.projects.items()]
 

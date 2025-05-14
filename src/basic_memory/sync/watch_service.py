@@ -171,7 +171,7 @@ class WatchService:
         """
         project_path = Path(project.path).resolve()
         sub_path = Path(path).resolve()
-        return project_path in sub_path.parents  # pragma: no cover
+        return project_path in sub_path.parents
 
     async def handle_changes(self, project: Project, changes: Set[FileChange]) -> None:
         """Process a batch of file changes"""
