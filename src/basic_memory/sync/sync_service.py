@@ -494,7 +494,7 @@ class SyncService:
                 result.files[rel_path] = checksum
                 result.checksums[checksum] = rel_path
 
-                logger.debug("Found file", path=rel_path, checksum=checksum)
+                logger.debug(f"Found file, path={rel_path}, checksum={checksum}")
 
         duration_ms = int((time.time() - start_time) * 1000)
         logger.debug(

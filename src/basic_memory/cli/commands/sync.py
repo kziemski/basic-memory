@@ -13,7 +13,7 @@ from rich.tree import Tree
 
 from basic_memory import db
 from basic_memory.cli.app import app
-from basic_memory.config import config, get_project_config
+from basic_memory.config import config
 from basic_memory.markdown import EntityParser
 from basic_memory.markdown.markdown_processor import MarkdownProcessor
 from basic_memory.models import Project
@@ -46,10 +46,10 @@ async def get_sync_service(project: Project) -> SyncService: # pragma: no cover
         db_path=app_config.database_path, db_type=db.DatabaseType.FILESYSTEM
     )
 
-    project_config = get_project_config()
-    entity_parser = EntityParser(project_config.home)
+    project_path = Path(project.path)
+    entity_parser = EntityParser(project_path)
     markdown_processor = MarkdownProcessor(entity_parser)
-    file_service = FileService(project_config.home, markdown_processor)
+    file_service = FileService(project_path, markdown_processor)
 
     # Initialize repositories
     entity_repository = EntityRepository(session_maker, project_id=project.id)

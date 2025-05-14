@@ -7,7 +7,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Set
 
-from basic_memory.cli.commands.sync import get_sync_service
 from basic_memory.config import BasicMemoryConfig, WATCH_STATUS_JSON
 from basic_memory.models import Project
 from basic_memory.repository import ProjectRepository
@@ -181,6 +180,8 @@ class WatchService:
         from typing import List, Set
 
         # Lazily initialize sync service for project changes
+        from basic_memory.cli.commands.sync import get_sync_service
+
         sync_service = await get_sync_service(project)
         file_service = sync_service.file_service
 

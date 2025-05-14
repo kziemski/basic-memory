@@ -14,7 +14,6 @@ from basic_memory.cli.app import app
 from basic_memory.cli.commands.sync import get_sync_service
 from basic_memory.config import config, app_config
 from basic_memory.repository import ProjectRepository
-from basic_memory.sync import SyncService
 from basic_memory.sync.sync_service import SyncReport
 
 # Create rich console
@@ -88,9 +87,9 @@ def build_directory_summary(counts: Dict[str, int]) -> str:
     return " ".join(parts)
 
 
-def display_changes(title: str, changes: SyncReport, verbose: bool = False):
+def display_changes(project_name: str, title: str, changes: SyncReport, verbose: bool = False):
     """Display changes using Rich for better visualization."""
-    tree = Tree(title)
+    tree = Tree(f"{project_name}: {title}")
 
     if changes.total == 0:
         tree.add("No changes")
@@ -134,10 +133,10 @@ async def run_status(verbose: bool = False):
     project = await project_repository.get_by_name(config.project)
     if not project:
         raise Exception(f"Project '{config.project}' not found")
-    
+
     sync_service = await get_sync_service(project)
     knowledge_changes = await sync_service.scan(config.home)
-    display_changes("Status", knowledge_changes, verbose)
+    display_changes(project.name, "Status", knowledge_changes, verbose)
 
 
 @app.command()
@@ -148,6 +147,6 @@ def status(
     try:
         asyncio.run(run_status(verbose))  # pragma: no cover
     except Exception as e:
-        logger.exception(f"Error checking status: {e}")
+        logger.error(f"Error checking status: {e}")
         typer.echo(f"Error checking status: {e}", err=True)
         raise typer.Exit(code=1)  # pragma: no cover
