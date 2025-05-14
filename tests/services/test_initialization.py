@@ -31,14 +31,14 @@ async def test_initialize_database_error(mock_run_migrations, test_config):
 @pytest.mark.asyncio
 @patch("basic_memory.services.initialization.initialize_database")
 @patch("basic_memory.services.initialization.initialize_file_sync")
-async def test_initialize_app(mock_initialize_file_sync, mock_initialize_database, test_config):
+async def test_initialize_app(mock_initialize_file_sync, mock_initialize_database, app_config):
     """Test app initialization."""
     mock_initialize_file_sync.return_value = "task"
 
-    result = await initialize_app(test_config)
+    result = await initialize_app(app_config)
 
-    mock_initialize_database.assert_called_once_with(test_config)
-    mock_initialize_file_sync.assert_called_once_with(test_config)
+    mock_initialize_database.assert_called_once_with(app_config)
+    mock_initialize_file_sync.assert_called_once_with(app_config)
     assert result == "task"
 
 

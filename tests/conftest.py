@@ -35,6 +35,7 @@ from basic_memory.services.search_service import SearchService
 from basic_memory.sync.sync_service import SyncService
 from basic_memory.sync.watch_service import WatchService
 from basic_memory.config import app_config as basic_memory_app_config  # noqa: F401
+from basic_memory import config
 
 @pytest.fixture
 def anyio_backend():
@@ -45,9 +46,14 @@ def project_root() -> Path:
     return Path(__file__).parent.parent
 
 @pytest.fixture
-def app_config(test_config: ProjectConfig) -> BasicMemoryConfig:
+def app_config(test_config: ProjectConfig, monkeypatch) -> BasicMemoryConfig:
     projects = {test_config.name: str(test_config.home)}
     app_config = BasicMemoryConfig(env="test", projects=projects, default_project=test_config.name)
+
+    # set the module app_config instance project list
+    basic_memory_app_config.projects = projects
+    basic_memory_app_config.default_project = test_config.name
+
     return app_config
 
 @pytest.fixture
@@ -123,12 +129,12 @@ async def project_repository(
 
 
 @pytest_asyncio.fixture(scope="function")
-async def test_project(project_repository: ProjectRepository) -> Project:
+async def test_project(test_config, project_repository: ProjectRepository) -> Project:
     """Create a test project to be used as context for other repositories."""
     project_data = {
-        "name": "Test Project Context",
+        "name": test_config.name,
         "description": "Project used as context for tests",
-        "path": "/test/project/context",
+        "path": str(test_config.home),
         "is_active": True,
         "is_default": True,  # Explicitly set as the default project
     }
@@ -384,8 +390,8 @@ async def test_graph(
 
 
 @pytest.fixture
-def watch_service(sync_service, file_service, test_config):
-    return WatchService(sync_service=sync_service, file_service=file_service, config=test_config)
+def watch_service(app_config: BasicMemoryConfig, project_repository) -> WatchService:
+    return WatchService(app_config=app_config, project_repository=project_repository)
 
 
 @pytest.fixture

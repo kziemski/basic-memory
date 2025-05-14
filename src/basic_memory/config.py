@@ -4,19 +4,20 @@ import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, Literal, Optional, List
 
 from loguru import logger
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 import basic_memory
-from basic_memory.utils import setup_logging
+from basic_memory.utils import setup_logging, generate_permalink
 
 DATABASE_NAME = "memory.db"
 APP_DATABASE_NAME = "memory.db"  # Using the same name but in the app directory
 DATA_DIR_NAME = ".basic-memory"
 CONFIG_FILE_NAME = "config.json"
+WATCH_STATUS_JSON = "watch-status.json"
 
 Environment = Literal["test", "dev", "user"]
 
@@ -31,6 +32,10 @@ class ProjectConfig:
     @property
     def project(self):
         return self.name
+
+    @property
+    def project_url(self) -> str:
+        return f"/{generate_permalink(self.name)}"
 
 
 class BasicMemoryConfig(BaseSettings):
@@ -116,6 +121,14 @@ class BasicMemoryConfig(BaseSettings):
         config = config_manager.load_config()
         return config.app_database_path
 
+    @property
+    def project_list(self) -> List[ProjectConfig]:
+        """Get all configured projects as ProjectConfig objects."""
+        return [
+            ProjectConfig(name=name, home=Path(path)) for name, path in self.projects.items()
+        ]
+
+
     @field_validator("projects")
     @classmethod
     def ensure_project_paths_exists(cls, v: Dict[str, str]) -> Path:  # pragma: no cover
@@ -176,11 +189,11 @@ class ConfigManager:
         """Get all configured projects."""
         return self.config.projects.copy()
 
+
     @property
     def default_project(self) -> str:
         """Get the default project name."""
         return self.config.default_project
-
 
     def add_project(self, name: str, path: str) -> None:
         """Add a new project to the configuration."""
@@ -214,15 +227,15 @@ class ConfigManager:
         self.save_config(self.config)
 
 
-def get_project_config(project_name: Optional[str] = None) -> ProjectConfig:
+def get_project_config() -> ProjectConfig:
     """Get the project configuration for the current session."""
 
     # Get project name from environment variable or use provided name or default
-    env_project_name = os.environ.get(
-        "BASIC_MEMORY_PROJECT", None
-    )
+    env_project_name = os.environ.get("BASIC_MEMORY_PROJECT", None)
     actual_project_name = env_project_name or config_manager.default_project
-    project_path = Path(config_manager.projects.get(actual_project_name))  # pyright: ignore [reportArgumentType]
+
+    # the config contains a dict[str,str] of project names and absolute paths
+    project_path = config_manager.projects.get(actual_project_name)
     if not project_path:
         raise ValueError(f"Project '{actual_project_name}' not found")
 

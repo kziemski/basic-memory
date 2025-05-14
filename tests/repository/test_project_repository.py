@@ -18,9 +18,9 @@ from basic_memory.repository.project_repository import ProjectRepository
 async def sample_project(project_repository: ProjectRepository) -> Project:
     """Create a sample project for testing."""
     project_data = {
-        "name": "Test Project",
-        "description": "A test project",
-        "path": "/test/project/path",
+        "name": "Sample Project",
+        "description": "A sample project",
+        "path": "/sample/project/path",
         "is_active": True,
         "is_default": False,
         "created_at": datetime.now(timezone.utc),
@@ -33,9 +33,9 @@ async def sample_project(project_repository: ProjectRepository) -> Project:
 async def test_create_project(project_repository: ProjectRepository):
     """Test creating a new project."""
     project_data = {
-        "name": "Test Project",
-        "description": "A test project",
-        "path": "/test/project/path",
+        "name": "Sample Project",
+        "description": "A sample project",
+        "path": "/sample/project/path",
         "is_active": True,
         "is_default": False,
     }
@@ -43,16 +43,16 @@ async def test_create_project(project_repository: ProjectRepository):
 
     # Verify returned object
     assert project.id is not None
-    assert project.name == "Test Project"
-    assert project.description == "A test project"
-    assert project.path == "/test/project/path"
+    assert project.name == "Sample Project"
+    assert project.description == "A sample project"
+    assert project.path == "/sample/project/path"
     assert project.is_active is True
     assert project.is_default is False
     assert isinstance(project.created_at, datetime)
     assert isinstance(project.updated_at, datetime)
 
     # Verify permalink was generated correctly
-    assert project.permalink == "test-project"
+    assert project.permalink == "sample-project"
 
     # Verify in database
     found = await project_repository.find_by_id(project.id)
@@ -61,7 +61,7 @@ async def test_create_project(project_repository: ProjectRepository):
     assert found.name == project.name
     assert found.description == project.description
     assert found.path == project.path
-    assert found.permalink == "test-project"
+    assert found.permalink == "sample-project"
     assert found.is_active is True
     assert found.is_default is False
 
@@ -84,7 +84,7 @@ async def test_get_by_name(project_repository: ProjectRepository, sample_project
 async def test_get_by_permalink(project_repository: ProjectRepository, sample_project: Project):
     """Test getting a project by permalink."""
     # Verify the permalink value
-    assert sample_project.permalink == "test-project"
+    assert sample_project.permalink == "sample-project"
 
     # Test exact match
     found = await project_repository.get_by_permalink(sample_project.permalink)

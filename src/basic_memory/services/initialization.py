@@ -5,16 +5,14 @@ to ensure consistent application startup across all entry points.
 """
 
 import asyncio
-from typing import Optional
+from pathlib import Path
 
 from loguru import logger
 
 from basic_memory import db
 from basic_memory.config import ProjectConfig, config_manager, BasicMemoryConfig
-from basic_memory.sync import WatchService
-
-# Import this inside functions to avoid circular imports
-# from basic_memory.cli.commands.sync import get_sync_service
+from basic_memory.models import Project
+from basic_memory.repository import ProjectRepository
 
 
 async def initialize_database(app_config: BasicMemoryConfig) -> None:
@@ -35,8 +33,8 @@ async def initialize_database(app_config: BasicMemoryConfig) -> None:
 
 
 async def initialize_file_sync(
-    app_config: ProjectConfig,
-) -> asyncio.Task:
+    app_config: BasicMemoryConfig,
+):
     """Initialize file synchronization services.
 
     Args:
@@ -46,25 +44,34 @@ async def initialize_file_sync(
         Tuple of (sync_service, watch_service, watch_task) if sync is enabled,
         or (None, None, None) if sync is disabled
     """
-    # Load app configuration
-    # Import here to avoid circular imports
-    from basic_memory.cli.commands.sync import get_sync_service
 
-    # Initialize sync service
-    sync_service = await get_sync_service()
+    # delay import
+    from basic_memory.sync import WatchService
+
+    # Load app configuration
+    _, session_maker = await db.get_or_create_db(
+        db_path=app_config.database_path, db_type=db.DatabaseType.FILESYSTEM
+    )
+    project_repository = ProjectRepository(session_maker)
 
     # Initialize watch service
     watch_service = WatchService(
-        sync_service=sync_service,
-        file_service=sync_service.entity_service.file_service,
-        config=app_config,
+        app_config=app_config,
+        project_repository=project_repository,
         quiet=True,
     )
 
-    # Create the background task for running sync
-    async def run_background_sync():  # pragma: no cover
+    # background task for running sync
+    async def run_background_sync(project: Project):  # pragma: no cover
         # Run initial full sync
-        await sync_service.sync(app_config.home)
+
+        # avoid circular imports
+        from basic_memory.cli.commands.sync import get_sync_service
+
+        sync_service = await get_sync_service(project)
+        sync_dir = Path(project.path)
+
+        await sync_service.sync(sync_dir)
         logger.info("Sync completed successfully")
 
         # Start background sync task
@@ -73,17 +80,21 @@ async def initialize_file_sync(
         # Start watching for changes
         await watch_service.run()
 
-    watch_task = asyncio.create_task(run_background_sync())
+    sync_tasks = [
+        run_background_sync(project) for project in await project_repository.get_active_projects()
+    ]
+
+    watch_tasks = asyncio.gather(*sync_tasks)
     logger.info("Watch service started")
-    return watch_task
+    return watch_tasks
 
 
 async def initialize_app(
-    app_config: ProjectConfig,
-) -> Optional[asyncio.Task]:
+    app_config: BasicMemoryConfig,
+):
     """Initialize the Basic Memory application.
 
-    This function handles all initialization steps needed for both API and shor lived CLI commands.
+    This function handles all initialization steps needed for both API and short lived CLI commands.
     For long running commands like mcp, a
     - Running database migrations
     - Setting up file synchronization
@@ -107,7 +118,7 @@ async def initialize_app(
     return await initialize_file_sync(app_config)
 
 
-def ensure_initialization(app_config: ProjectConfig) -> None:
+def ensure_initialization(app_config: BasicMemoryConfig) -> None:
     """Ensure initialization runs in a synchronous context.
 
     This is a wrapper for the async initialize_app function that can be
@@ -125,7 +136,7 @@ def ensure_initialization(app_config: ProjectConfig) -> None:
         # more specific error message
 
 
-def ensure_initialize_database(app_config: ProjectConfig) -> None:
+def ensure_initialize_database(app_config: BasicMemoryConfig) -> None:
     """Ensure initialization runs in a synchronous context.
 
     This is a wrapper for the async initialize_database function that can be

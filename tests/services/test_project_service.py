@@ -79,17 +79,6 @@ def test_project_operations(project_service: ProjectService, tmp_path):
         assert test_project_name in project_service.projects
         assert project_service.projects[test_project_name] == test_project_path
 
-        # Test switching to the project
-        original_env = os.environ.get("BASIC_MEMORY_PROJECT")
-        try:
-            project_service.switch_project(test_project_name)
-            assert os.environ.get("BASIC_MEMORY_PROJECT") == test_project_name
-        finally:
-            # Restore original environment
-            if original_env is not None:
-                os.environ["BASIC_MEMORY_PROJECT"] = original_env
-            elif "BASIC_MEMORY_PROJECT" in os.environ:
-                del os.environ["BASIC_MEMORY_PROJECT"]
 
         # Test setting as default
         original_default = project_service.default_project
@@ -99,10 +88,6 @@ def test_project_operations(project_service: ProjectService, tmp_path):
         # Restore original default
         if original_default:
             project_service.set_default_project(original_default)
-
-        # Test error when switching to non-existent project
-        with pytest.raises(ValueError):
-            project_service.switch_project("non-existent-project")
 
         # Test removing the project
         project_service.remove_project(test_project_name)

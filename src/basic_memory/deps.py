@@ -1,9 +1,8 @@
 """Dependency injection functions for basic-memory services."""
 
-from typing import Annotated, Optional, Union
+from typing import Annotated
 
-from fastapi import Depends, HTTPException, Request, status
-from loguru import logger
+from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     AsyncEngine,
@@ -12,7 +11,6 @@ from sqlalchemy.ext.asyncio import (
 
 from basic_memory import db
 from basic_memory.config import ProjectConfig, config
-from basic_memory.models import Project
 from basic_memory.importers import (
     ChatGPTImporter,
     ClaudeConversationsImporter,
@@ -23,7 +21,6 @@ from basic_memory.markdown import EntityParser
 from basic_memory.markdown.markdown_processor import MarkdownProcessor
 from basic_memory.repository.entity_repository import EntityRepository
 from basic_memory.repository.observation_repository import ObservationRepository
-from basic_memory.repository.project_info_repository import ProjectInfoRepository
 from basic_memory.repository.project_repository import ProjectRepository
 from basic_memory.repository.relation_repository import RelationRepository
 from basic_memory.repository.search_repository import SearchRepository
@@ -72,6 +69,7 @@ SessionMakerDep = Annotated[async_sessionmaker, Depends(get_session_maker)]
 
 ## repositories
 
+
 async def get_project_repository(
     session_maker: SessionMakerDep,
 ) -> ProjectRepository:
@@ -84,6 +82,7 @@ ProjectRepositoryDep = Annotated[ProjectRepository, Depends(get_project_reposito
 from fastapi import Path
 
 ProjectPathDep = Annotated[str, Path()]  # Use Path dependency to extract from URL
+
 
 async def get_project_id(
     project_repository: ProjectRepositoryDep,
@@ -117,9 +116,9 @@ async def get_project_id(
 
     # Not found
     raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail=f"Project '{project}' not found."
+        status_code=status.HTTP_404_NOT_FOUND, detail=f"Project '{project}' not found."
     )
+
 
 """
 The project_id dependency is used in the following:
@@ -249,14 +248,14 @@ LinkResolverDep = Annotated[LinkResolver, Depends(get_link_resolver)]
 
 
 async def get_context_service(
-    search_repository: SearchRepositoryDep, 
+    search_repository: SearchRepositoryDep,
     entity_repository: EntityRepositoryDep,
-    observation_repository: ObservationRepositoryDep
+    observation_repository: ObservationRepositoryDep,
 ) -> ContextService:
     return ContextService(
-        search_repository=search_repository, 
-        entity_repository=entity_repository, 
-        observation_repository=observation_repository
+        search_repository=search_repository,
+        entity_repository=entity_repository,
+        observation_repository=observation_repository,
     )
 
 
@@ -313,6 +312,7 @@ DirectoryServiceDep = Annotated[DirectoryService, Depends(get_directory_service)
 
 # Import
 
+
 async def get_chatgpt_importer(
     project_config: ProjectConfigDep, markdown_processor: MarkdownProcessorDep
 ) -> ChatGPTImporter:
@@ -322,6 +322,7 @@ async def get_chatgpt_importer(
 
 ChatGPTImporterDep = Annotated[ChatGPTImporter, Depends(get_chatgpt_importer)]
 
+
 async def get_claude_conversations_importer(
     project_config: ProjectConfigDep, markdown_processor: MarkdownProcessorDep
 ) -> ClaudeConversationsImporter:
@@ -329,7 +330,10 @@ async def get_claude_conversations_importer(
     return ClaudeConversationsImporter(project_config.home, markdown_processor)
 
 
-ClaudeConversationsImporterDep = Annotated[ClaudeConversationsImporter, Depends(get_claude_conversations_importer)]
+ClaudeConversationsImporterDep = Annotated[
+    ClaudeConversationsImporter, Depends(get_claude_conversations_importer)
+]
+
 
 async def get_claude_projects_importer(
     project_config: ProjectConfigDep, markdown_processor: MarkdownProcessorDep

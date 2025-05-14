@@ -17,7 +17,7 @@ from basic_memory.schemas import (
     ProjectStatistics,
     SystemStatus,
 )
-from basic_memory.sync.watch_service import WATCH_STATUS_JSON
+from basic_memory.config import WATCH_STATUS_JSON
 
 
 class ProjectService:
@@ -83,33 +83,7 @@ class ProjectService:
         self.config_manager.remove_project(name)
         logger.info(f"Project '{name}' removed from configuration")
 
-    def switch_project(self, name: str) -> ProjectConfig:
-        """Switch to a different project.
-
-        Args:
-            name: The name of the project to switch to
-
-        Raises:
-            ValueError: If the project doesn't exist
-        """
-        if name not in self.config_manager.projects:
-            raise ValueError(f"Project '{name}' not found")
-
-        # Activate it for the current session by setting the environment variable
-        os.environ["BASIC_MEMORY_PROJECT"] = name
-
-        # Reload configuration to apply the change
-        from importlib import reload
-
-        from basic_memory import config as config_module
-
-        reload(config_module)
-
-        # Reload configuration to apply the change
-        logger.info(f"Switched to project: {name}")
-
-        return config_module.config
-
+    
     def set_default_project(self, name: str) -> None:
         """Set the default project.
 
@@ -121,8 +95,6 @@ class ProjectService:
         """
         # Set the default project
         self.config_manager.set_default_project(name)
-        self.switch_project(name)
-
         logger.info(f"Project '{name}' set as default")
 
     async def get_project_info(self) -> ProjectInfoResponse:

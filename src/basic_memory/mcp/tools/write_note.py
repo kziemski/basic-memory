@@ -10,13 +10,13 @@ from basic_memory.mcp.tools.utils import call_put
 from basic_memory.schemas import EntityResponse
 from basic_memory.schemas.base import Entity
 from basic_memory.utils import parse_tags
+from basic_memory.config import get_project_config
 
 # Define TagType as a Union that can accept either a string or a list of strings or None
 TagType = Union[List[str], str, None]
 
 # Define TagType as a Union that can accept either a string or a list of strings or None
 TagType = Union[List[str], str, None]
-
 
 @mcp.tool(
     description="Create or update a markdown note. Returns a markdown formatted summary of the semantic content.",
@@ -78,10 +78,12 @@ async def write_note(
         content=content,
         entity_metadata=metadata,
     )
+    project_url = get_project_config().project_url
+    print(f"project_url: {project_url}")
 
     # Create or update via knowledge API
     logger.debug("Creating entity via API", permalink=entity.permalink)
-    url = f"/knowledge/entities/{entity.permalink}"
+    url = f"{project_url}/knowledge/entities/{entity.permalink}"
     response = await call_put(client, url, json=entity.model_dump())
     result = EntityResponse.model_validate(response.json())
 

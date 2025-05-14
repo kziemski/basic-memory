@@ -8,6 +8,7 @@ from typing import Annotated, Optional
 from loguru import logger
 from pydantic import Field
 
+from basic_memory.config import get_project_config
 from basic_memory.mcp.async_client import client
 from basic_memory.mcp.server import mcp
 from basic_memory.mcp.tools.utils import call_post
@@ -45,11 +46,13 @@ async def search_prompt(
         query=query,
         timeframe=timeframe
     )
+
+    project_url = get_project_config().project_url
     
     # Call the prompt API endpoint
     response = await call_post(
         client,
-        "/prompt/search",
+        f"{project_url}/prompt/search",
         json=request.model_dump(exclude_none=True)
     )
     
