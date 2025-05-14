@@ -18,6 +18,7 @@ TagType = Union[List[str], str, None]
 # Define TagType as a Union that can accept either a string or a list of strings or None
 TagType = Union[List[str], str, None]
 
+
 @mcp.tool(
     description="Create or update a markdown note. Returns a markdown formatted summary of the semantic content.",
 )

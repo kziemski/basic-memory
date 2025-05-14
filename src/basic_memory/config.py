@@ -124,10 +124,7 @@ class BasicMemoryConfig(BaseSettings):
     @property
     def project_list(self) -> List[ProjectConfig]:
         """Get all configured projects as ProjectConfig objects."""
-        return [
-            ProjectConfig(name=name, home=Path(path)) for name, path in self.projects.items()
-        ]
-
+        return [ProjectConfig(name=name, home=Path(path)) for name, path in self.projects.items()]
 
     @field_validator("projects")
     @classmethod
@@ -188,7 +185,6 @@ class ConfigManager:
     def projects(self) -> Dict[str, str]:
         """Get all configured projects."""
         return self.config.projects.copy()
-
 
     @property
     def default_project(self) -> str:

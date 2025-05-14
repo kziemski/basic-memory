@@ -1,6 +1,6 @@
 """Router for project management."""
 
-from fastapi import APIRouter, HTTPException, Path, Query, Body
+from fastapi import APIRouter, HTTPException, Path, Body
 from typing import Optional
 
 from basic_memory.deps import ProjectServiceDep
@@ -73,10 +73,10 @@ async def add_project(
     """
     try:
         await project_service.add_project(project_data.name, project_data.path)
-        
+
         if project_data.set_default:
             await project_service.set_default_project(project_data.name)
-        
+
         return ProjectStatusResponse(  # pyright: ignore [reportCallIssue]
             message=f"Project '{project_data.name}' added successfully",
             status="success",
@@ -107,10 +107,14 @@ async def remove_project(
     """
     try:
         # Get project info before removal for the response
-        old_project = {"name": name, "path": project_service.projects.get(name, ""), "watch_status": None}
-        
+        old_project = {
+            "name": name,
+            "path": project_service.projects.get(name, ""),
+            "watch_status": None,
+        }
+
         await project_service.remove_project(name)
-        
+
         return ProjectStatusResponse(  # pyright: ignore [reportCallIssue]
             message=f"Project '{name}' removed successfully",
             status="success",
@@ -140,16 +144,24 @@ async def set_default_project(
         old_default = project_service.default_project
         old_project = None
         if old_default != name:
-            old_project = {"name": old_default, "path": project_service.projects.get(old_default, ""), "watch_status": None}
-        
+            old_project = {
+                "name": old_default,
+                "path": project_service.projects.get(old_default, ""),
+                "watch_status": None,
+            }
+
         await project_service.set_default_project(name)
-        
+
         return ProjectStatusResponse(
             message=f"Project '{name}' set as default successfully",
             status="success",
             default=True,
             old_project=old_project,
-            new_project={"name": name, "path": project_service.projects.get(name, ""), "watch_status": None},  # pyright: ignore [reportArgumentType]
+            new_project={
+                "name": name,
+                "path": project_service.projects.get(name, ""),
+                "watch_status": None,
+            },  # pyright: ignore [reportArgumentType]
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -175,13 +187,17 @@ async def update_project(
     """
     try:
         # Get original project info for the response
-        old_project = {"name": name, "path": project_service.projects.get(name, ""), "watch_status": None}
-        
+        old_project = {
+            "name": name,
+            "path": project_service.projects.get(name, ""),
+            "watch_status": None,
+        }
+
         await project_service.update_project(name, updated_path=path, is_active=is_active)
-        
+
         # Get updated project info
         updated_path = path if path else project_service.projects.get(name, "")
-        
+
         return ProjectStatusResponse(
             message=f"Project '{name}' updated successfully",
             status="success",
@@ -208,7 +224,7 @@ async def synchronize_projects(
     """
     try:
         await project_service.synchronize_projects()
-        
+
         return ProjectStatusResponse(  # pyright: ignore [reportCallIssue]
             message="Projects synchronized successfully between configuration and database",
             status="success",

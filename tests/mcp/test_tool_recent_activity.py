@@ -71,7 +71,8 @@ async def test_recent_activity_type_filters(client, test_graph):
     assert result is not None
     assert len(result.results) > 0
     assert all(
-        isinstance(item.primary_result, EntitySummary) or isinstance(item.primary_result, ObservationSummary)
+        isinstance(item.primary_result, EntitySummary)
+        or isinstance(item.primary_result, ObservationSummary)
         for item in result.results
     )
 
@@ -80,7 +81,8 @@ async def test_recent_activity_type_filters(client, test_graph):
     assert result is not None
     assert len(result.results) > 0
     assert all(
-        isinstance(item.primary_result, EntitySummary) or isinstance(item.primary_result, ObservationSummary)
+        isinstance(item.primary_result, EntitySummary)
+        or isinstance(item.primary_result, ObservationSummary)
         for item in result.results
     )
 

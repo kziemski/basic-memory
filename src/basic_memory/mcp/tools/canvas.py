@@ -74,7 +74,7 @@ async def canvas(
     ```
     """
     project_url = get_project_config().project_url
-    
+
     # Ensure path has .canvas extension
     file_title = title if title.endswith(".canvas") else f"{title}.canvas"
     file_path = f"{folder}/{file_title}"

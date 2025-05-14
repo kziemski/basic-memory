@@ -45,7 +45,7 @@ async def project_info() -> ProjectInfoResponse:
     """
     logger.info("Getting project info")
     project_url = get_project_config().project_url
-    
+
     # Call the API endpoint
     response = await call_get(client, f"{project_url}/project/info")
 

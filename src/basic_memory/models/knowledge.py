@@ -42,13 +42,15 @@ class Entity(Base):
         # Project-specific uniqueness constraints
         Index(
             "uix_entity_permalink_project",
-            "permalink", "project_id",
+            "permalink",
+            "project_id",
             unique=True,
             sqlite_where=text("content_type = 'text/markdown' AND permalink IS NOT NULL"),
         ),
         Index(
             "uix_entity_file_path_project",
-            "file_path", "project_id",
+            "file_path",
+            "project_id",
             unique=True,
         ),
     )

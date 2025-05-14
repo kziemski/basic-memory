@@ -8,7 +8,6 @@ from datetime import datetime, timezone
 from dateparser import parse
 from fastapi import APIRouter, HTTPException, status
 from loguru import logger
-from pathlib import Path
 
 from basic_memory.api.routers.utils import to_graph_context, to_search_results
 from basic_memory.api.template_loader import template_loader
@@ -72,19 +71,19 @@ async def continue_conversation(
                     max_related=request.related_items_limit,
                     include_observations=True,  # Include observations for entities
                 )
-                
+
                 # Process results into the schema format
                 graph_context = await to_graph_context(
                     context_result, entity_repository=entity_repository
                 )
-                
+
                 # Add results to our collection (limit to top results for each permalink)
                 if graph_context.results:
                     all_hierarchical_results.extend(graph_context.results[:3])
-        
+
         # Limit to a reasonable number of total results
         all_hierarchical_results = all_hierarchical_results[:10]
-        
+
         template_context = {
             "topic": request.topic,
             "timeframe": request.timeframe,
@@ -103,7 +102,7 @@ async def continue_conversation(
         recent_context = await to_graph_context(context_result, entity_repository=entity_repository)
 
         hierarchical_results = recent_context.results[:5]  # Limit to top 5 recent items
-        
+
         template_context = {
             "topic": f"Recent Activity from ({request.timeframe})",
             "timeframe": request.timeframe,
@@ -116,21 +115,21 @@ async def continue_conversation(
         rendered_prompt = await template_loader.render(
             "prompts/continue_conversation.hbs", template_context
         )
-        
+
         # Calculate metadata
         # Count items of different types
         observation_count = 0
         relation_count = 0
         entity_count = 0
-        
+
         # For topic-based search
         if request.topic:
             for item in all_hierarchical_results:
                 if hasattr(item, "observations"):
                     observation_count += len(item.observations) if item.observations else 0
-                
+
                 if hasattr(item, "related_results"):
-                    for related in (item.related_results or []):
+                    for related in item.related_results or []:
                         if hasattr(related, "type"):
                             if related.type == "relation":
                                 relation_count += 1
@@ -141,37 +140,41 @@ async def continue_conversation(
             for item in hierarchical_results:
                 if hasattr(item, "observations"):
                     observation_count += len(item.observations) if item.observations else 0
-                
+
                 if hasattr(item, "related_results"):
-                    for related in (item.related_results or []):
+                    for related in item.related_results or []:
                         if hasattr(related, "type"):
                             if related.type == "relation":
                                 relation_count += 1
                             elif related.type == "entity":
                                 entity_count += 1
-        
+
         # Build metadata
         metadata = {
             "query": request.topic,
             "timeframe": request.timeframe,
             "search_count": len(results) if request.topic else 0,  # Original search results count
-            "context_count": len(all_hierarchical_results) if request.topic else len(hierarchical_results),
+            "context_count": len(all_hierarchical_results)
+            if request.topic
+            else len(hierarchical_results),
             "observation_count": observation_count,
             "relation_count": relation_count,
-            "total_items": (len(all_hierarchical_results if request.topic else hierarchical_results) + 
-                           observation_count + relation_count + entity_count),
+            "total_items": (
+                len(all_hierarchical_results if request.topic else hierarchical_results)
+                + observation_count
+                + relation_count
+                + entity_count
+            ),
             "search_limit": request.search_items_limit,
             "context_depth": request.depth,
             "related_limit": request.related_items_limit,
-            "generated_at": datetime.now(timezone.utc).isoformat()
+            "generated_at": datetime.now(timezone.utc).isoformat(),
         }
-        
+
         prompt_metadata = PromptMetadata(**metadata)
 
         return PromptResponse(
-            prompt=rendered_prompt, 
-            context=template_context,
-            metadata=prompt_metadata
+            prompt=rendered_prompt, context=template_context, metadata=prompt_metadata
         )
     except Exception as e:
         logger.error(f"Error rendering continue conversation template: {e}")
@@ -222,7 +225,7 @@ async def search_prompt(
     try:
         # Render template
         rendered_prompt = await template_loader.render("prompts/search.hbs", template_context)
-        
+
         # Build metadata
         metadata = {
             "query": request.query,
@@ -230,20 +233,18 @@ async def search_prompt(
             "search_count": len(search_results),
             "context_count": len(search_results),
             "observation_count": 0,  # Search results don't include observations
-            "relation_count": 0,     # Search results don't include relations
+            "relation_count": 0,  # Search results don't include relations
             "total_items": len(search_results),
             "search_limit": limit,
-            "context_depth": 0,      # No context depth for basic search
-            "related_limit": 0,      # No related items for basic search
-            "generated_at": datetime.now(timezone.utc).isoformat()
+            "context_depth": 0,  # No context depth for basic search
+            "related_limit": 0,  # No related items for basic search
+            "generated_at": datetime.now(timezone.utc).isoformat(),
         }
-        
+
         prompt_metadata = PromptMetadata(**metadata)
 
         return PromptResponse(
-            prompt=rendered_prompt, 
-            context=template_context,
-            metadata=prompt_metadata
+            prompt=rendered_prompt, context=template_context, metadata=prompt_metadata
         )
     except Exception as e:
         logger.error(f"Error rendering search template: {e}")

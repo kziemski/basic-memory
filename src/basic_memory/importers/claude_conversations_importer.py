@@ -1,12 +1,10 @@
 """Claude conversations import service for Basic Memory."""
 
-import json
 import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
-from basic_memory.config import config
 from basic_memory.markdown.schemas import EntityFrontmatter, EntityMarkdown
 from basic_memory.importers.base import Importer
 from basic_memory.schemas.importer import ChatImportResult

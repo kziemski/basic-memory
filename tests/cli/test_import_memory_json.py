@@ -6,10 +6,8 @@ import pytest
 from typer.testing import CliRunner
 
 from basic_memory.cli.app import import_app
-from basic_memory.cli.commands import import_memory_json #noqa
-from basic_memory.config import config
-from basic_memory.importers import MemoryJsonImporter
-from basic_memory.markdown import EntityParser, MarkdownProcessor
+from basic_memory.cli.commands import import_memory_json  # noqa
+from basic_memory.markdown import MarkdownProcessor
 
 # Set up CLI runner
 runner = CliRunner()
@@ -42,7 +40,6 @@ def sample_json_file(tmp_path, sample_entities):
         for entity in sample_entities:
             f.write(json.dumps(entity) + "\n")
     return json_file
-
 
 
 @pytest.mark.asyncio

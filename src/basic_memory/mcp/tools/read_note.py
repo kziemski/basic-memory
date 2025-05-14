@@ -46,7 +46,7 @@ async def read_note(identifier: str, page: int = 1, page_size: int = 10) -> str:
     """
 
     project_url = get_project_config().project_url
-    
+
     # Get the file via REST API - first try direct permalink lookup
     entity_path = memory_url_path(identifier)
     path = f"{project_url}/resource/{entity_path}"

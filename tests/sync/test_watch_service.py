@@ -208,9 +208,7 @@ Test content
 
     # Initial sync
     await sync_service.sync(project_dir)
-    initial_entity = await sync_service.entity_repository.get_by_file_path(
-        "old/test_move.md"
-    )
+    initial_entity = await sync_service.entity_repository.get_by_file_path("old/test_move.md")
 
     # Move file
     new_path = project_dir / "new" / "moved_file.md"
@@ -224,16 +222,12 @@ Test content
     await watch_service.handle_changes(test_project, changes)
 
     # Verify
-    moved_entity = await sync_service.entity_repository.get_by_file_path(
-        "new/moved_file.md"
-    )
+    moved_entity = await sync_service.entity_repository.get_by_file_path("new/moved_file.md")
     assert moved_entity is not None
     assert moved_entity.id == initial_entity.id  # Same entity, new path
 
     # Original path should no longer exist
-    old_entity = await sync_service.entity_repository.get_by_file_path(
-        "old/test_move.md"
-    )
+    old_entity = await sync_service.entity_repository.get_by_file_path("old/test_move.md")
     assert old_entity is None
 
     # Check event was recorded
@@ -332,9 +326,7 @@ Test content for rapid moves
     assert final_entity is not None
 
     # Intermediate paths should not exist
-    original_entity = await sync_service.entity_repository.get_by_file_path(
-        "original.md"
-    )
+    original_entity = await sync_service.entity_repository.get_by_file_path("original.md")
     temp_entity = await sync_service.entity_repository.get_by_file_path("temp.md")
     assert original_entity is None
     assert temp_entity is None
@@ -365,9 +357,7 @@ Test content for rapid moves
     await watch_service.handle_changes(test_project, changes)
 
     # Verify final state
-    original_entity = await sync_service.entity_repository.get_by_file_path(
-        "original.md"
-    )
+    original_entity = await sync_service.entity_repository.get_by_file_path("original.md")
     assert original_entity is None  # delete event is handled
 
 
@@ -423,9 +413,7 @@ This is a test file in a directory
 
     # The file path should be untouched since we're ignoring directory events
     # We'd need a separate event for the file itself to be updated
-    old_entity = await sync_service.entity_repository.get_by_file_path(
-        "old_dir/test_file.md"
-    )
+    old_entity = await sync_service.entity_repository.get_by_file_path("old_dir/test_file.md")
 
     # The original entity should still exist since we only renamed the directory
     # but didn't process updates to the file itself

@@ -41,22 +41,21 @@ async def continue_conversation(
         Context from previous sessions on this topic
     """
     logger.info(f"Continuing session, topic: {topic}, timeframe: {timeframe}")
-    
+
     # Create request model
     request = ContinueConversationRequest(  # pyright: ignore [reportCallIssue]
-        topic=topic, 
-        timeframe=timeframe
+        topic=topic, timeframe=timeframe
     )
 
     project_url = get_project_config().project_url
-    
+
     # Call the prompt API endpoint
     response = await call_post(
         client,
         f"{project_url}/prompt/continue-conversation",
-        json=request.model_dump(exclude_none=True)
+        json=request.model_dump(exclude_none=True),
     )
-    
+
     # Extract the rendered prompt from the response
     result = response.json()
     return result["prompt"]

@@ -6,10 +6,8 @@ import pytest
 from typer.testing import CliRunner
 
 from basic_memory.cli.app import app, import_app
-from basic_memory.cli.commands import import_chatgpt # noqa
+from basic_memory.cli.commands import import_chatgpt  # noqa
 from basic_memory.config import config
-from basic_memory.importers import ChatGPTImporter
-from basic_memory.markdown import EntityParser, MarkdownProcessor
 
 # Set up CLI runner
 runner = CliRunner()
@@ -149,7 +147,6 @@ def sample_chatgpt_json(tmp_path, sample_conversation):
     with open(json_file, "w", encoding="utf-8") as f:
         json.dump([sample_conversation], f)
     return json_file
-
 
 
 def test_import_chatgpt_command_success(tmp_path, sample_chatgpt_json, monkeypatch):

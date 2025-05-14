@@ -4,7 +4,7 @@ from datetime import datetime
 
 import pytest
 
-from basic_memory.schemas.memory import GraphContext, RelationSummary, ObservationSummary
+from basic_memory.schemas.memory import GraphContext
 
 
 @pytest.mark.asyncio
@@ -71,7 +71,7 @@ async def test_get_memory_context_depth(client, test_graph, project_url):
     # Calculate total related items in all result items
     total_related1 = sum(len(item.related_results) for item in context1.results)
     total_related2 = sum(len(item.related_results) for item in context2.results)
-    
+
     assert total_related2 > total_related1
 
 
@@ -89,9 +89,13 @@ async def test_get_memory_context_timeframe(client, test_graph, project_url):
     older = GraphContext(**response.json())
 
     # Calculate total related items
-    total_recent_related = sum(len(item.related_results) for item in recent.results) if recent.results else 0
-    total_older_related = sum(len(item.related_results) for item in older.results) if older.results else 0
-    
+    total_recent_related = (
+        sum(len(item.related_results) for item in recent.results) if recent.results else 0
+    )
+    total_older_related = (
+        sum(len(item.related_results) for item in older.results) if older.results else 0
+    )
+
     assert total_older_related >= total_recent_related
 
 

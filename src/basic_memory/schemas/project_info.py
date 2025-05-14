@@ -78,12 +78,13 @@ class SystemStatus(BaseModel):
 
 class ProjectDetail(BaseModel):
     """Detailed information about a project."""
-    
+
     path: str = Field(description="Path to the project directory")
     active: bool = Field(description="Whether the project is active")
     id: Optional[int] = Field(description="Database ID of the project if available")
     is_default: bool = Field(description="Whether this is the default project")
     permalink: str = Field(description="URL-friendly identifier for the project")
+
 
 class ProjectInfoResponse(BaseModel):
     """Response for the project_info tool."""

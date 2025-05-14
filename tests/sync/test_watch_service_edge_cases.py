@@ -1,6 +1,5 @@
 """Test edge cases in the WatchService."""
 
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -46,7 +45,6 @@ def test_filter_changes_hidden_path(watch_service, test_config):
         )
         is False
     )
-
 
 
 @pytest.mark.asyncio

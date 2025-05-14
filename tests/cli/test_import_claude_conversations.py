@@ -6,10 +6,8 @@ import pytest
 from typer.testing import CliRunner
 
 from basic_memory.cli.app import app
-from basic_memory.cli.commands import import_claude_conversations # noqa
+from basic_memory.cli.commands import import_claude_conversations  # noqa
 from basic_memory.config import config
-from basic_memory.importers import ClaudeConversationsImporter
-from basic_memory.markdown import EntityParser, MarkdownProcessor
 
 # Set up CLI runner
 runner = CliRunner()

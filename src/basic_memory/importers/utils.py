@@ -2,8 +2,7 @@
 
 import re
 from datetime import datetime
-from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 
 def clean_filename(name: str) -> str:

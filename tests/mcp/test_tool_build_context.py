@@ -57,9 +57,17 @@ async def test_get_discussion_context_timeframe(client, test_graph):
     )
 
     # Calculate total related items
-    total_recent_related = sum(len(item.related_results) for item in recent_context.results) if recent_context.results else 0
-    total_older_related = sum(len(item.related_results) for item in older_context.results) if older_context.results else 0
-    
+    total_recent_related = (
+        sum(len(item.related_results) for item in recent_context.results)
+        if recent_context.results
+        else 0
+    )
+    total_older_related = (
+        sum(len(item.related_results) for item in older_context.results)
+        if older_context.results
+        else 0
+    )
+
     assert total_older_related >= total_recent_related
 
 

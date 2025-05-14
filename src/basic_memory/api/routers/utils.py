@@ -13,14 +13,17 @@ from basic_memory.schemas.memory import (
 from basic_memory.schemas.search import SearchItemType, SearchResult
 from basic_memory.services import EntityService
 from basic_memory.services.context_service import (
-    ContextResultRow, 
-    ContextResult as ServiceContextResult, 
-    ContextResultItem,
-    ContextMetadata as ServiceContextMetadata
+    ContextResultRow,
+    ContextResult as ServiceContextResult,
 )
 
 
-async def to_graph_context(context_result: ServiceContextResult, entity_repository: EntityRepository, page: Optional[int] = None, page_size: Optional[int]= None):
+async def to_graph_context(
+    context_result: ServiceContextResult,
+    entity_repository: EntityRepository,
+    page: Optional[int] = None,
+    page_size: Optional[int] = None,
+):
     # Helper function to convert items to summaries
     async def to_summary(item: SearchIndexRow | ContextResultRow):
         match item.type:
@@ -48,7 +51,7 @@ async def to_graph_context(context_result: ServiceContextResult, entity_reposito
                     title=item.title,  # pyright: ignore
                     file_path=item.file_path,
                     permalink=item.permalink,  # pyright: ignore
-                    relation_type=item.relation_type, # pyright: ignore
+                    relation_type=item.relation_type,  # pyright: ignore
                     from_entity=from_entity.title,  # pyright: ignore
                     to_entity=to_entity.title if to_entity else None,
                     created_at=item.created_at,
@@ -61,17 +64,17 @@ async def to_graph_context(context_result: ServiceContextResult, entity_reposito
     for context_item in context_result.results:
         # Process primary result
         primary_result = await to_summary(context_item.primary_result)
-        
+
         # Process observations
         observations = []
         for obs in context_item.observations:
             observations.append(await to_summary(obs))
-            
+
         # Process related results
         related = []
         for rel in context_item.related_results:
             related.append(await to_summary(rel))
-            
+
         # Add to hierarchical results
         hierarchical_results.append(
             ContextResult(
@@ -80,7 +83,7 @@ async def to_graph_context(context_result: ServiceContextResult, entity_reposito
                 related_results=related,
             )
         )
-    
+
     # Create schema metadata from service metadata
     metadata = MemoryMetadata(
         uri=context_result.metadata.uri,
@@ -94,7 +97,7 @@ async def to_graph_context(context_result: ServiceContextResult, entity_reposito
         total_relations=context_result.metadata.total_relations,
         total_observations=context_result.metadata.total_observations,
     )
-    
+
     # Return new GraphContext with just hierarchical results
     return GraphContext(
         results=hierarchical_results,
@@ -102,6 +105,7 @@ async def to_graph_context(context_result: ServiceContextResult, entity_reposito
         page=page,
         page_size=page_size,
     )
+
 
 async def to_search_results(entity_service: EntityService, results: List[SearchIndexRow]):
     search_results = []

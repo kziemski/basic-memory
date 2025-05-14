@@ -9,8 +9,7 @@ from typing import Dict, Optional
 from loguru import logger
 from sqlalchemy import text
 
-from basic_memory.config import ConfigManager, config, ProjectConfig, app_config
-from basic_memory.models.project import Project
+from basic_memory.config import ConfigManager, config, app_config
 from basic_memory.repository.project_repository import ProjectRepository
 from basic_memory.schemas import (
     ActivityMetrics,

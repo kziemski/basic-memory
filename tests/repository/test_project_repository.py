@@ -6,12 +6,10 @@ from pathlib import Path
 import pytest
 import pytest_asyncio
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
 from basic_memory import db
 from basic_memory.models.project import Project
 from basic_memory.repository.project_repository import ProjectRepository
-
 
 
 @pytest_asyncio.fixture
@@ -154,22 +152,22 @@ async def test_get_active_projects(project_repository: ProjectRepository):
         "path": "/inactive/project/path",
         "is_active": False,
     }
-    
+
     await project_repository.create(active_project_data)
     await project_repository.create(inactive_project_data)
-    
+
     # Get active projects
     active_projects = await project_repository.get_active_projects()
     assert len(active_projects) >= 1  # Could be more from other tests
-    
+
     # Verify that all returned projects are active
     for project in active_projects:
         assert project.is_active is True
-    
+
     # Verify active project is included
     active_names = [p.name for p in active_projects]
     assert "Active Project" in active_names
-    
+
     # Verify inactive project is not included
     assert "Inactive Project" not in active_names
 
@@ -252,11 +250,11 @@ async def test_delete_project(project_repository: ProjectRepository, sample_proj
     # Delete project
     result = await project_repository.delete(sample_project.id)
     assert result is True
-    
+
     # Verify deletion
     deleted = await project_repository.find_by_id(sample_project.id)
     assert deleted is None
-    
+
     # Verify with direct database query
     async with db.scoped_session(project_repository.session_maker) as session:
         query = select(Project).filter(Project.id == sample_project.id)

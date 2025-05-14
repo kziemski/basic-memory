@@ -1,4 +1,5 @@
 """Tests for MCP prompts."""
+
 from datetime import timezone, datetime
 
 import pytest
@@ -119,7 +120,7 @@ def test_prompt_context_with_file_path_no_permalink():
         title="Test File",
         permalink=None,  # No permalink
         file_path="test_file.pdf",
-        created_at= datetime.now(timezone.utc)
+        created_at=datetime.now(timezone.utc),
     )
 
     context = PromptContext(

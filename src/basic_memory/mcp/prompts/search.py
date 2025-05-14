@@ -40,22 +40,17 @@ async def search_prompt(
         Formatted search results with context
     """
     logger.info(f"Searching knowledge base, query: {query}, timeframe: {timeframe}")
-    
+
     # Create request model
-    request = SearchPromptRequest(
-        query=query,
-        timeframe=timeframe
-    )
+    request = SearchPromptRequest(query=query, timeframe=timeframe)
 
     project_url = get_project_config().project_url
-    
+
     # Call the prompt API endpoint
     response = await call_post(
-        client,
-        f"{project_url}/prompt/search",
-        json=request.model_dump(exclude_none=True)
+        client, f"{project_url}/prompt/search", json=request.model_dump(exclude_none=True)
     )
-    
+
     # Extract the rendered prompt from the response
     result = response.json()
     return result["prompt"]

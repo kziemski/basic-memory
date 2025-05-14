@@ -34,7 +34,7 @@ async def source_entity(session_maker, test_project: Project):
 async def target_entity(session_maker, test_project: Project):
     """Create a target entity for testing relations."""
     entity = Entity(
-        project_id=test_project.id,   
+        project_id=test_project.id,
         title="test_target",
         entity_type="test",
         permalink="target/test-target",

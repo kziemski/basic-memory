@@ -24,19 +24,19 @@ async def test_project_info_tool():
         "project_path": "/path/to/test",
         "available_projects": {
             "test": {
-                "path": "/path/to/test", 
+                "path": "/path/to/test",
                 "active": True,
                 "id": 1,
                 "is_default": True,
-                "permalink": "test"
-            }, 
+                "permalink": "test",
+            },
             "other": {
                 "path": "/path/to/other",
                 "active": False,
                 "id": 2,
                 "is_default": False,
-                "permalink": "other"
-            }
+                "permalink": "other",
+            },
         },
         "default_project": "test",
         "statistics": {

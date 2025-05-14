@@ -56,7 +56,9 @@ async def test_handle_tmp_files(watch_service, test_config, test_project, sync_s
 
 
 @pytest.mark.asyncio
-async def test_atomic_write_tmp_file_handling(watch_service, test_config, test_project, sync_service):
+async def test_atomic_write_tmp_file_handling(
+    watch_service, test_config, test_project, sync_service
+):
     """Test handling of file changes during atomic write operations."""
     project_dir = test_config.home
 
@@ -89,9 +91,7 @@ async def test_atomic_write_tmp_file_handling(watch_service, test_config, test_p
 
     # Verify only the final file is in the database
     tmp_entity = await sync_service.entity_repository.get_by_file_path("document.tmp")
-    final_entity = await sync_service.entity_repository.get_by_file_path(
-        "document.md"
-    )
+    final_entity = await sync_service.entity_repository.get_by_file_path("document.md")
 
     assert tmp_entity is None, "Temp file should not have an entity"
     assert final_entity is not None, "Final file should have an entity"
@@ -152,17 +152,11 @@ async def test_rapid_atomic_writes(watch_service, test_config, test_project, syn
     await watch_service.handle_changes(test_project, changes)
 
     # Verify only the final file is in the database
-    final_entity = await sync_service.entity_repository.get_by_file_path(
-        "document.md"
-    )
+    final_entity = await sync_service.entity_repository.get_by_file_path("document.md")
     assert final_entity is not None
 
     # Also verify no tmp entities were created
-    tmp1_entity = await sync_service.entity_repository.get_by_file_path(
-        "document.1.tmp"
-    )
-    tmp2_entity = await sync_service.entity_repository.get_by_file_path(
-        "document.2.tmp"
-    )
+    tmp1_entity = await sync_service.entity_repository.get_by_file_path("document.1.tmp")
+    tmp2_entity = await sync_service.entity_repository.get_by_file_path("document.2.tmp")
     assert tmp1_entity is None
     assert tmp2_entity is None

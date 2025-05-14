@@ -1,7 +1,5 @@
 """Tests for CLI sync command."""
 
-import asyncio
-
 import pytest
 from typer.testing import CliRunner
 
@@ -89,7 +87,6 @@ Some content""")
 
     # Run sync - should detect new file
     await run_sync(verbose=True)
-
 
 
 def test_sync_command(sync_service, test_config, test_project):

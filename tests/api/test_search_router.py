@@ -38,7 +38,9 @@ async def test_search_basic(client, indexed_entity, project_url):
 @pytest.mark.asyncio
 async def test_search_basic_pagination(client, indexed_entity, project_url):
     """Test basic text search."""
-    response = await client.post(f"{project_url}/search/?page=3&page_size=1", json={"text": "search"})
+    response = await client.post(
+        f"{project_url}/search/?page=3&page_size=1", json={"text": "search"}
+    )
     assert response.status_code == 200
     search_results = SearchResponse.model_validate(response.json())
     assert len(search_results.results) == 1
@@ -52,7 +54,8 @@ async def test_search_with_entity_type_filter(client, indexed_entity, project_ur
     """Test search with type filter."""
     # Should find with correct type
     response = await client.post(
-        f"{project_url}/search/", json={"text": "test", "entity_types": [SearchItemType.ENTITY.value]}
+        f"{project_url}/search/",
+        json={"text": "test", "entity_types": [SearchItemType.ENTITY.value]},
     )
     assert response.status_code == 200
     search_results = SearchResponse.model_validate(response.json())
@@ -60,7 +63,8 @@ async def test_search_with_entity_type_filter(client, indexed_entity, project_ur
 
     # Should find with relation type
     response = await client.post(
-        f"{project_url}/search/", json={"text": "test", "entity_types": [SearchItemType.RELATION.value]}
+        f"{project_url}/search/",
+        json={"text": "test", "entity_types": [SearchItemType.RELATION.value]},
     )
     assert response.status_code == 200
     search_results = SearchResponse.model_validate(response.json())

@@ -35,15 +35,17 @@ from basic_memory.services.search_service import SearchService
 from basic_memory.sync.sync_service import SyncService
 from basic_memory.sync.watch_service import WatchService
 from basic_memory.config import app_config as basic_memory_app_config  # noqa: F401
-from basic_memory import config
+
 
 @pytest.fixture
 def anyio_backend():
     return "asyncio"
 
+
 @pytest.fixture
 def project_root() -> Path:
     return Path(__file__).parent.parent
+
 
 @pytest.fixture
 def app_config(test_config: ProjectConfig, monkeypatch) -> BasicMemoryConfig:
@@ -56,12 +58,11 @@ def app_config(test_config: ProjectConfig, monkeypatch) -> BasicMemoryConfig:
 
     return app_config
 
+
 @pytest.fixture
 def test_config(tmp_path) -> ProjectConfig:
     """Test configuration using in-memory DB."""
-    config = ProjectConfig(
-        name="test-project", home=tmp_path
-    )
+    config = ProjectConfig(name="test-project", home=tmp_path)
 
     (tmp_path / config.home.name).mkdir(parents=True, exist_ok=True)
     logger.info(f"project config home: {config.home}")
@@ -95,8 +96,7 @@ async def session_maker(engine_factory) -> async_sessionmaker[AsyncSession]:
 
 @pytest_asyncio.fixture(scope="function")
 async def entity_repository(
-    session_maker: async_sessionmaker[AsyncSession],
-    test_project: Project
+    session_maker: async_sessionmaker[AsyncSession], test_project: Project
 ) -> EntityRepository:
     """Create an EntityRepository instance with project context."""
     return EntityRepository(session_maker, project_id=test_project.id)
@@ -104,8 +104,7 @@ async def entity_repository(
 
 @pytest_asyncio.fixture(scope="function")
 async def observation_repository(
-    session_maker: async_sessionmaker[AsyncSession],
-    test_project: Project
+    session_maker: async_sessionmaker[AsyncSession], test_project: Project
 ) -> ObservationRepository:
     """Create an ObservationRepository instance with project context."""
     return ObservationRepository(session_maker, project_id=test_project.id)
@@ -113,8 +112,7 @@ async def observation_repository(
 
 @pytest_asyncio.fixture(scope="function")
 async def relation_repository(
-    session_maker: async_sessionmaker[AsyncSession],
-    test_project: Project
+    session_maker: async_sessionmaker[AsyncSession], test_project: Project
 ) -> RelationRepository:
     """Create a RelationRepository instance with project context."""
     return RelationRepository(session_maker, project_id=test_project.id)

@@ -6,10 +6,8 @@ import pytest
 from typer.testing import CliRunner
 
 from basic_memory.cli.app import app
-from basic_memory.cli.commands.import_claude_projects import import_projects # noqa
+from basic_memory.cli.commands.import_claude_projects import import_projects  # noqa
 from basic_memory.config import config
-from basic_memory.importers import ClaudeProjectsImporter
-from basic_memory.markdown import EntityParser, MarkdownProcessor
 
 # Set up CLI runner
 runner = CliRunner()

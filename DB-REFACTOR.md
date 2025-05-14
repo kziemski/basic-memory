@@ -101,6 +101,8 @@ To:
 - [x] Implement project switching via app DB
 - [x] Ensure CLI help text reflects new project structure
 - [x] ~~Add migration commands for existing projects~~
+- [x] Update project CLI commands to use the API with direct config fallback
+- [x] Added tests for CLI project commands
 
 ### 11. Performance Optimizations
 
@@ -172,11 +174,13 @@ For existing projects, we'll:
 ## Testing
 
 - [x] Test project creation, switching, deletion
-- [x] Test knowledge operations (entity, observation, relation) with project context
+- [x] Test knowledge operations (entity, observation, relation) with project context 
 - [x] Verify existing projects can be migrated successfully
 - [x] Test multi-project operations
 - [x] Test error cases (missing project, etc.)
 - [x] Test CLI commands with multiple projects
+- [x] Test CLI error handling for API failures
+- [x] Test CLI commands use only API, no config fallback
 
 ## Current Status
 
@@ -191,3 +195,16 @@ The app-level database refactoring is now complete! We have successfully:
 7. Modified the directory router and all other routers to respect project boundaries
 
 The only remaining task is to thoroughly test performance with larger multi-project datasets, which can be done as part of regular usage monitoring.
+
+## CLI API Integration
+
+The CLI commands have been updated to use the API endpoints for project management operations. This includes:
+
+1. The `project list` command now fetches projects from the API
+2. The `project add` command creates projects through the API
+3. The `project remove` command removes projects through the API
+4. The `project default` command sets the default project through the API
+5. Added a new `project sync` command to synchronize projects between config and database
+6. The `project current` command now shows detailed project information from the API
+
+This approach ensures that project operations performed through the CLI are synchronized with the database, maintaining consistency between the configuration file and the app-level database. Failed API requests result in a proper error message instructing the user to ensure the Basic Memory server is running, rather than falling back to direct config updates. This ensures that the database remains the single source of truth for project information.

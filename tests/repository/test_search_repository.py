@@ -1,7 +1,6 @@
 """Tests for the SearchRepository."""
 
 from datetime import datetime, timezone
-import json
 
 import pytest
 import pytest_asyncio
@@ -75,7 +74,7 @@ async def second_entity(session_maker, second_project: Project):
 async def test_init_search_index(search_repository):
     """Test that search index can be initialized."""
     await search_repository.init_search_index()
-    
+
     # Verify search_index table exists
     async with db.scoped_session(search_repository.session_maker) as session:
         result = await session.execute(
@@ -100,15 +99,15 @@ async def test_index_item(search_repository, search_entity):
         metadata={"entity_type": search_entity.entity_type},
         created_at=search_entity.created_at,
         updated_at=search_entity.updated_at,
-        project_id=search_repository.project_id
+        project_id=search_repository.project_id,
     )
-    
+
     # Index the item
     await search_repository.index_item(search_row)
-    
+
     # Search for the item
     results = await search_repository.search(search_text="search test")
-    
+
     # Verify we found the item
     assert len(results) == 1
     assert results[0].title == search_entity.title
@@ -117,10 +116,7 @@ async def test_index_item(search_repository, search_entity):
 
 @pytest.mark.asyncio
 async def test_project_isolation(
-    search_repository, 
-    second_project_repository,
-    search_entity,
-    second_entity
+    search_repository, second_project_repository, search_entity, second_entity
 ):
     """Test that search is isolated by project."""
     # Index entities in both projects
@@ -136,9 +132,9 @@ async def test_project_isolation(
         metadata={"entity_type": search_entity.entity_type},
         created_at=search_entity.created_at,
         updated_at=search_entity.updated_at,
-        project_id=search_repository.project_id
+        project_id=search_repository.project_id,
     )
-    
+
     search_row2 = SearchIndexRow(
         id=second_entity.id,
         type=SearchItemType.ENTITY.value,
@@ -151,29 +147,29 @@ async def test_project_isolation(
         metadata={"entity_type": second_entity.entity_type},
         created_at=second_entity.created_at,
         updated_at=second_entity.updated_at,
-        project_id=second_project_repository.project_id
+        project_id=second_project_repository.project_id,
     )
-    
+
     # Index items in their respective repositories
     await search_repository.index_item(search_row1)
     await second_project_repository.index_item(search_row2)
-    
+
     # Search in first project
     results1 = await search_repository.search(search_text="unique first")
     assert len(results1) == 1
     assert results1[0].title == search_entity.title
     assert results1[0].project_id == search_repository.project_id
-    
+
     # Search in second project
     results2 = await second_project_repository.search(search_text="unique second")
     assert len(results2) == 1
     assert results2[0].title == second_entity.title
     assert results2[0].project_id == second_project_repository.project_id
-    
+
     # Make sure first project can't see second project's content
     results_cross1 = await search_repository.search(search_text="unique second")
     assert len(results_cross1) == 0
-    
+
     # Make sure second project can't see first project's content
     results_cross2 = await second_project_repository.search(search_text="unique first")
     assert len(results_cross2) == 0
@@ -195,18 +191,18 @@ async def test_delete_by_permalink(search_repository, search_entity):
         metadata={"entity_type": search_entity.entity_type},
         created_at=search_entity.created_at,
         updated_at=search_entity.updated_at,
-        project_id=search_repository.project_id
+        project_id=search_repository.project_id,
     )
-    
+
     await search_repository.index_item(search_row)
-    
+
     # Verify it exists
     results = await search_repository.search(search_text="content to delete")
     assert len(results) == 1
-    
+
     # Delete by permalink
     await search_repository.delete_by_permalink(search_entity.permalink)
-    
+
     # Verify it's gone
     results_after = await search_repository.search(search_text="content to delete")
     assert len(results_after) == 0
@@ -228,18 +224,18 @@ async def test_delete_by_entity_id(search_repository, search_entity):
         metadata={"entity_type": search_entity.entity_type},
         created_at=search_entity.created_at,
         updated_at=search_entity.updated_at,
-        project_id=search_repository.project_id
+        project_id=search_repository.project_id,
     )
-    
+
     await search_repository.index_item(search_row)
-    
+
     # Verify it exists
     results = await search_repository.search(search_text="entity to delete")
     assert len(results) == 1
-    
+
     # Delete by entity_id
     await search_repository.delete_by_entity_id(search_entity.id)
-    
+
     # Verify it's gone
     results_after = await search_repository.search(search_text="entity to delete")
     assert len(results_after) == 0
@@ -260,12 +256,12 @@ async def test_to_insert_includes_project_id(search_repository):
         metadata={"test": "metadata"},
         created_at=datetime.now(timezone.utc),
         updated_at=datetime.now(timezone.utc),
-        project_id=search_repository.project_id
+        project_id=search_repository.project_id,
     )
-    
+
     # Get insert data
     insert_data = row.to_insert()
-    
+
     # Verify project_id is included
     assert "project_id" in insert_data
     assert insert_data["project_id"] == search_repository.project_id

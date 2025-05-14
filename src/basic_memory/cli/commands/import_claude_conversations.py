@@ -56,7 +56,7 @@ def import_claude(
         # Process the file
         base_path = config.home / folder
         console.print(f"\nImporting chats from {conversations_json}...writing to {base_path}")
-        
+
         # Run the import
         with conversations_json.open("r", encoding="utf-8") as file:
             json_data = json.load(file)

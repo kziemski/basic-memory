@@ -19,7 +19,7 @@ from basic_memory.api.routers import (
     search,
     prompt_router,
 )
-from basic_memory.config import app_config 
+from basic_memory.config import app_config
 from basic_memory.services.initialization import initialize_app
 
 

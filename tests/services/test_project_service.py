@@ -1,12 +1,9 @@
 """Tests for ProjectService."""
 
 import os
-from unittest.mock import patch, AsyncMock
 
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from basic_memory.models.project import Project
 from basic_memory.schemas import (
     ProjectInfoResponse,
     ProjectStatistics,
@@ -68,7 +65,7 @@ def test_current_project_property(project_service: ProjectService):
 @pytest.mark.asyncio
 async def test_project_operations_sync_methods(project_service: ProjectService, tmp_path):
     """Test adding, switching, and removing a project using ConfigManager directly.
-    
+
     This test uses the ConfigManager directly instead of the async methods.
     """
     # Generate a unique project name for testing
@@ -176,81 +173,79 @@ async def test_get_project_info(project_service: ProjectService, test_graph):
     temp_service = ProjectService()  # No repository provided
     with pytest.raises(ValueError, match="Repository is required for get_project_info"):
         await temp_service.get_project_info()
-        
-        
+
+
 @pytest.mark.asyncio
 async def test_add_project_async(project_service: ProjectService, tmp_path):
     """Test adding a project with the updated async method."""
     test_project_name = f"test-async-project-{os.urandom(4).hex()}"
     test_project_path = str(tmp_path / "test-async-project")
-    
+
     # Make sure the test directory exists
     os.makedirs(test_project_path, exist_ok=True)
-    
+
     try:
         # Test adding a project
         await project_service.add_project(test_project_name, test_project_path)
-        
+
         # Verify it was added to config
         assert test_project_name in project_service.projects
         assert project_service.projects[test_project_name] == test_project_path
-        
+
         # Verify it was added to the database
         project = await project_service.repository.get_by_name(test_project_name)
         assert project is not None
         assert project.name == test_project_name
         assert project.path == test_project_path
-        
+
     finally:
         # Clean up
         if test_project_name in project_service.projects:
             await project_service.remove_project(test_project_name)
-        
+
         # Ensure it was removed from both config and DB
         assert test_project_name not in project_service.projects
         project = await project_service.repository.get_by_name(test_project_name)
         assert project is None
-        
-        
+
+
 @pytest.mark.asyncio
 async def test_set_default_project_async(project_service: ProjectService, tmp_path):
     """Test setting a project as default with the updated async method."""
     # First add a test project
     test_project_name = f"test-default-project-{os.urandom(4).hex()}"
     test_project_path = str(tmp_path / "test-default-project")
-    
+
     # Make sure the test directory exists
     os.makedirs(test_project_path, exist_ok=True)
-    
+
     original_default = project_service.default_project
-    
+
     try:
         # Add the test project
         await project_service.add_project(test_project_name, test_project_path)
-        
+
         # Set as default
         await project_service.set_default_project(test_project_name)
-        
+
         # Verify it's set as default in config
         assert project_service.default_project == test_project_name
-        
+
         # Verify it's set as default in database
         project = await project_service.repository.get_by_name(test_project_name)
         assert project is not None
         assert project.is_default is True
-        
+
         # Make sure old default is no longer default
         old_default_project = await project_service.repository.get_by_name(original_default)
         if old_default_project:
             assert old_default_project.is_default is not True
-        
+
     finally:
         # Restore original default
         if original_default:
             await project_service.set_default_project(original_default)
-        
+
         # Clean up test project
         if test_project_name in project_service.projects:
             await project_service.remove_project(test_project_name)
-            
-  

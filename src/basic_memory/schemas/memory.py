@@ -111,29 +111,26 @@ class MemoryMetadata(BaseModel):
 
 class ContextResult(BaseModel):
     """Context result containing a primary item with its observations and related items."""
-    
+
     primary_result: EntitySummary | RelationSummary | ObservationSummary = Field(
         description="Primary item"
     )
-    
+
     observations: Sequence[ObservationSummary] = Field(
-        description="Observations belonging to this entity",
-        default_factory=list
+        description="Observations belonging to this entity", default_factory=list
     )
-    
+
     related_results: Sequence[EntitySummary | RelationSummary | ObservationSummary] = Field(
-        description="Related items",
-        default_factory=list
+        description="Related items", default_factory=list
     )
 
 
 class GraphContext(BaseModel):
     """Complete context response."""
-    
+
     # hierarchical results
     results: Sequence[ContextResult] = Field(
-        description="Hierarchical results with related items nested",
-        default_factory=list
+        description="Hierarchical results with related items nested", default_factory=list
     )
 
     # Context metadata

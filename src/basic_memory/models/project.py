@@ -1,7 +1,7 @@
 """Project model for Basic Memory."""
 
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 
 from sqlalchemy import (
     Integer,
@@ -20,7 +20,7 @@ from basic_memory.utils import generate_permalink
 
 class Project(Base):
     """Project model for Basic Memory.
-    
+
     A project represents a collection of knowledge entities that are grouped together.
     Projects are stored in the app-level database and provide context for all knowledge
     operations.
@@ -46,25 +46,23 @@ class Project(Base):
 
     # Filesystem path to project directory
     path: Mapped[str] = mapped_column(String)
-    
+
     # Status flags
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    is_default: Mapped[Optional[bool]] = mapped_column(Boolean, default=None, unique=True, nullable=True)
-    
-    # Timestamps
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow
+    is_default: Mapped[Optional[bool]] = mapped_column(
+        Boolean, default=None, unique=True, nullable=True
     )
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
-    
+
     # Define relationships to entities, observations, and relations
     # These relationships will be established once we add project_id to those models
-    entities = relationship(
-        "Entity", back_populates="project", cascade="all, delete-orphan"
-    )
-    
+    entities = relationship("Entity", back_populates="project", cascade="all, delete-orphan")
+
     def __repr__(self) -> str:
         return f"Project(id={self.id}, name='{self.name}', permalink='{self.permalink}', path='{self.path}')"
 

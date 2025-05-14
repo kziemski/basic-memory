@@ -17,7 +17,6 @@ from watchfiles import awatch
 from watchfiles.main import FileChange, Change
 
 
-
 class WatchEvent(BaseModel):
     timestamp: datetime
     path: str
@@ -120,7 +119,7 @@ class WatchService:
 
                 # create coroutines to handle changes
                 change_handlers = [
-                    self.handle_changes(project, changes) # pyright: ignore
+                    self.handle_changes(project, changes)  # pyright: ignore
                     for project, changes in project_changes.items()
                 ]
 

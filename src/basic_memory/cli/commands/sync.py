@@ -40,7 +40,7 @@ class ValidationIssue:
     error: str
 
 
-async def get_sync_service(project: Project) -> SyncService: # pragma: no cover
+async def get_sync_service(project: Project) -> SyncService:  # pragma: no cover
     """Get sync service instance with all dependencies."""
     _, session_maker = await db.get_or_create_db(
         db_path=app_config.database_path, db_type=db.DatabaseType.FILESYSTEM
@@ -165,8 +165,9 @@ async def run_sync(verbose: bool = False):
     project = await project_repository.get_by_name(config.project)
     if not project:
         raise Exception(f"Project '{config.project}' not found")
-    
+
     import time
+
     start_time = time.time()
 
     logger.info(

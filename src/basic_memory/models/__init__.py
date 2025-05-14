@@ -11,4 +11,5 @@ __all__ = [
     "Observation",
     "Relation",
     "Project",
+    "basic_memory",
 ]

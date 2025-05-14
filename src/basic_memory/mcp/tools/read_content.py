@@ -180,7 +180,7 @@ async def read_content(path: str) -> dict:
     logger.info("Reading file", path=path)
 
     project_url = get_project_config().project_url
-    
+
     url = memory_url_path(path)
     response = await call_get(client, f"{project_url}/resource/{url}")
     content_type = response.headers.get("content-type", "application/octet-stream")

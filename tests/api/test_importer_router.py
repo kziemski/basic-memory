@@ -29,7 +29,10 @@ def chatgpt_json_content():
                         "id": "msg1",
                         "author": {"role": "user", "name": None, "metadata": {}},
                         "create_time": 1736616594.24054,
-                        "content": {"content_type": "text", "parts": ["Hello, this is a test message"]},
+                        "content": {
+                            "content_type": "text",
+                            "parts": ["Hello, this is a test message"],
+                        },
                         "status": "finished_successfully",
                         "metadata": {},
                     },
@@ -135,12 +138,14 @@ async def create_test_upload_file(tmp_path, content):
     file_path = tmp_path / "test_import.json"
     with open(file_path, "w", encoding="utf-8") as f:
         json.dump(content, f)
-    
+
     return file_path
 
 
 @pytest.mark.asyncio
-async def test_import_chatgpt(test_config, client: AsyncClient, tmp_path, chatgpt_json_content, file_service, project_url):
+async def test_import_chatgpt(
+    test_config, client: AsyncClient, tmp_path, chatgpt_json_content, file_service, project_url
+):
     """Test importing ChatGPT conversations."""
     # Create a test file
     file_path = await create_test_upload_file(tmp_path, chatgpt_json_content)
@@ -152,14 +157,14 @@ async def test_import_chatgpt(test_config, client: AsyncClient, tmp_path, chatgp
 
         # Send request
         response = await client.post(f"{project_url}/import/chatgpt", files=files, data=data)
-    
+
     # Check response
     assert response.status_code == 200
     result = ChatImportResult.model_validate(response.json())
     assert result.success is True
     assert result.conversations == 1
     assert result.messages == 2
-    
+
     # Verify files were created
     conv_path = Path("test_chatgpt") / "20250111-Test_Conversation.md"
     assert await file_service.exists(conv_path)
@@ -185,7 +190,7 @@ async def test_import_chatgpt_invalid_file(client: AsyncClient, tmp_path, projec
 
         # Send request - this should return an error
         response = await client.post(f"{project_url}/import/chatgpt", files=files, data=data)
-    
+
     # Check response
     assert response.status_code == 500
     assert "Import failed" in response.json()["detail"]
@@ -198,26 +203,28 @@ async def test_import_claude_conversations(
     """Test importing Claude conversations."""
     # Create a test file
     file_path = await create_test_upload_file(tmp_path, claude_conversations_json_content)
-    
+
     # Create a multipart form with the file
     with open(file_path, "rb") as f:
         files = {"file": ("conversations.json", f, "application/json")}
         data = {"folder": "test_claude_conversations"}
-        
+
         # Send request
-        response = await client.post(f"{project_url}/import/claude/conversations", files=files, data=data)
-    
+        response = await client.post(
+            f"{project_url}/import/claude/conversations", files=files, data=data
+        )
+
     # Check response
     assert response.status_code == 200
     result = ChatImportResult.model_validate(response.json())
     assert result.success is True
     assert result.conversations == 1
     assert result.messages == 2
-    
+
     # Verify files were created
     conv_path = Path("test_claude_conversations") / "20250105-Test_Conversation.md"
     assert await file_service.exists(conv_path)
-    
+
     content, _ = await file_service.read_file(conv_path)
     assert "# Test Conversation" in content
     assert "Hello, this is a test" in content
@@ -231,15 +238,17 @@ async def test_import_claude_conversations_invalid_file(client: AsyncClient, tmp
     file_path = tmp_path / "invalid.json"
     with open(file_path, "w") as f:
         f.write("This is not JSON")
-    
+
     # Create multipart form with invalid file
     with open(file_path, "rb") as f:
         files = {"file": ("invalid.json", f, "application/json")}
         data = {"folder": "test_claude_conversations"}
-        
+
         # Send request - this should return an error
-        response = await client.post(f"{project_url}/import/claude/conversations", files=files, data=data)
-    
+        response = await client.post(
+            f"{project_url}/import/claude/conversations", files=files, data=data
+        )
+
     # Check response
     assert response.status_code == 500
     assert "Import failed" in response.json()["detail"]
@@ -252,32 +261,34 @@ async def test_import_claude_projects(
     """Test importing Claude projects."""
     # Create a test file
     file_path = await create_test_upload_file(tmp_path, claude_projects_json_content)
-    
+
     # Create a multipart form with the file
     with open(file_path, "rb") as f:
         files = {"file": ("projects.json", f, "application/json")}
         data = {"folder": "test_claude_projects"}
-        
+
         # Send request
-        response = await client.post(f"{project_url}/import/claude/projects", files=files, data=data)
-    
+        response = await client.post(
+            f"{project_url}/import/claude/projects", files=files, data=data
+        )
+
     # Check response
     assert response.status_code == 200
     result = ProjectImportResult.model_validate(response.json())
     assert result.success is True
     assert result.documents == 2
     assert result.prompts == 1
-    
+
     # Verify files were created
     project_dir = Path("test_claude_projects") / "Test_Project"
     assert await file_service.exists(project_dir / "prompt-template.md")
     assert await file_service.exists(project_dir / "docs" / "Test_Document.md")
     assert await file_service.exists(project_dir / "docs" / "Another_Document.md")
-    
+
     # Check content
     prompt_content, _ = await file_service.read_file(project_dir / "prompt-template.md")
     assert "# Test Prompt" in prompt_content
-    
+
     doc_content, _ = await file_service.read_file(project_dir / "docs" / "Test_Document.md")
     assert "# Test Document" in doc_content
     assert "This is test content" in doc_content
@@ -290,15 +301,17 @@ async def test_import_claude_projects_invalid_file(client: AsyncClient, tmp_path
     file_path = tmp_path / "invalid.json"
     with open(file_path, "w") as f:
         f.write("This is not JSON")
-    
+
     # Create multipart form with invalid file
     with open(file_path, "rb") as f:
         files = {"file": ("invalid.json", f, "application/json")}
         data = {"folder": "test_claude_projects"}
-        
+
         # Send request - this should return an error
-        response = await client.post(f"{project_url}/import/claude/projects", files=files, data=data)
-    
+        response = await client.post(
+            f"{project_url}/import/claude/projects", files=files, data=data
+        )
+
     # Check response
     assert response.status_code == 500
     assert "Import failed" in response.json()["detail"]
@@ -314,26 +327,26 @@ async def test_import_memory_json(
     with open(json_file, "w", encoding="utf-8") as f:
         for entity in memory_json_content:
             f.write(json.dumps(entity) + "\n")
-    
+
     # Create a multipart form with the file
     with open(json_file, "rb") as f:
         files = {"file": ("memory.json", f, "application/json")}
         data = {"folder": "test_memory_json"}
-        
+
         # Send request
         response = await client.post(f"{project_url}/import/memory-json", files=files, data=data)
-    
+
     # Check response
     assert response.status_code == 200
     result = EntityImportResult.model_validate(response.json())
     assert result.success is True
     assert result.entities == 1
     assert result.relations == 1
-    
+
     # Verify files were created
     entity_path = Path("test_memory_json") / "test" / "test_entity.md"
     assert await file_service.exists(entity_path)
-    
+
     # Check content
     content, _ = await file_service.read_file(entity_path)
     assert "Test observation 1" in content
@@ -351,21 +364,21 @@ async def test_import_memory_json_without_folder(
     with open(json_file, "w", encoding="utf-8") as f:
         for entity in memory_json_content:
             f.write(json.dumps(entity) + "\n")
-    
+
     # Create a multipart form with the file
     with open(json_file, "rb") as f:
         files = {"file": ("memory.json", f, "application/json")}
-        
+
         # Send request without destination_folder
         response = await client.post(f"{project_url}/import/memory-json", files=files)
-    
+
     # Check response
     assert response.status_code == 200
     result = EntityImportResult.model_validate(response.json())
     assert result.success is True
     assert result.entities == 1
     assert result.relations == 1
-    
+
     # Verify files were created in the root directory
     entity_path = Path("conversations") / "test" / "test_entity.md"
     assert await file_service.exists(entity_path)
@@ -378,15 +391,15 @@ async def test_import_memory_json_invalid_file(client: AsyncClient, tmp_path, pr
     file_path = tmp_path / "invalid.json"
     with open(file_path, "w") as f:
         f.write("This is not JSON")
-    
+
     # Create multipart form with invalid file
     with open(file_path, "rb") as f:
         files = {"file": ("invalid.json", f, "application/json")}
         data = {"destination_folder": "test_memory_json"}
-        
+
         # Send request - this should return an error
         response = await client.post(f"{project_url}/import/memory-json", files=files, data=data)
-    
+
     # Check response
     assert response.status_code == 500
     assert "Import failed" in response.json()["detail"]
@@ -397,7 +410,7 @@ async def test_import_missing_file(client: AsyncClient, tmp_path, project_url):
     """Test importing with missing file."""
     # Send a request without a file
     response = await client.post(f"{project_url}/import/chatgpt", data={"folder": "test_folder"})
-    
+
     # Check that the request was rejected
     assert response.status_code in [400, 422]  # Either bad request or unprocessable entity
 
@@ -409,15 +422,15 @@ async def test_import_empty_file(client: AsyncClient, tmp_path, project_url):
     file_path = tmp_path / "empty.json"
     with open(file_path, "w") as f:
         f.write("")
-    
+
     # Create multipart form with empty file
     with open(file_path, "rb") as f:
         files = {"file": ("empty.json", f, "application/json")}
         data = {"folder": "test_chatgpt"}
-        
+
         # Send request
         response = await client.post(f"{project_url}/import/chatgpt", files=files, data=data)
-    
+
     # Check response
     assert response.status_code == 500
     assert "Import failed" in response.json()["detail"]
@@ -430,7 +443,7 @@ async def test_import_malformed_json(client: AsyncClient, tmp_path, project_url)
     file_path = tmp_path / "malformed.json"
     with open(file_path, "w") as f:
         f.write('{"incomplete": "json"')  # Missing closing brace
-    
+
     # Test all import endpoints
     endpoints = [
         (f"{project_url}/import/chatgpt", {"folder": "test"}),
@@ -438,15 +451,15 @@ async def test_import_malformed_json(client: AsyncClient, tmp_path, project_url)
         (f"{project_url}/import/claude/projects", {"base_folder": "test"}),
         (f"{project_url}/import/memory-json", {"destination_folder": "test"}),
     ]
-    
+
     for endpoint, data in endpoints:
         # Create multipart form with malformed JSON
         with open(file_path, "rb") as f:
             files = {"file": ("malformed.json", f, "application/json")}
-            
+
             # Send request
             response = await client.post(endpoint, files=files, data=data)
-        
+
         # Check response
         assert response.status_code == 500
         assert "Import failed" in response.json()["detail"]

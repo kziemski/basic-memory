@@ -56,7 +56,7 @@ def memory_json(
         # Process the file
         base_path = config.home if not destination_folder else config.home / destination_folder
         console.print(f"\nImporting from {json_path}...writing to {base_path}")
-        
+
         # Run the import for json log format
         file_data = []
         with json_path.open("r", encoding="utf-8") as file:

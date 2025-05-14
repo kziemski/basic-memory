@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Path, status
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     AsyncEngine,
@@ -78,9 +78,6 @@ async def get_project_repository(
 
 
 ProjectRepositoryDep = Annotated[ProjectRepository, Depends(get_project_repository)]
-
-from fastapi import Path
-
 ProjectPathDep = Annotated[str, Path()]  # Use Path dependency to extract from URL
 
 

@@ -6,7 +6,6 @@ from pathlib import Path
 from textwrap import dedent
 
 import pytest
-import pytest_asyncio
 
 from basic_memory.config import ProjectConfig, BasicMemoryConfig
 from basic_memory.models import Entity

@@ -1,8 +1,6 @@
 """Memory JSON import service for Basic Memory."""
 
-import json
 import logging
-from pathlib import Path
 from typing import Any, Dict, List
 
 from basic_memory.config import config

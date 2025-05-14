@@ -21,7 +21,7 @@ async def test_create_entity(client: AsyncClient, file_service, project_url):
         "folder": "test",
         "entity_type": "test",
         "content": "TestContent",
-        "project": "Test Project Context"
+        "project": "Test Project Context",
     }
     # Create an entity
     print(f"Requesting with data: {data}")
@@ -110,6 +110,7 @@ async def test_get_entity_by_permalink(client: AsyncClient, project_url):
     assert entity["entity_type"] == "test"
     assert entity["permalink"] == "test/test-entity"
 
+
 @pytest.mark.asyncio
 async def test_get_entity_by_file_path(client: AsyncClient, project_url):
     """Should retrieve an entity by path ID."""
@@ -136,10 +137,12 @@ async def test_get_entities(client: AsyncClient, project_url):
     """Should open multiple entities by path IDs."""
     # Create a few entities with different names
     await client.post(
-        f"{project_url}/knowledge/entities", json={"title": "AlphaTest", "folder": "", "entity_type": "test"}
+        f"{project_url}/knowledge/entities",
+        json={"title": "AlphaTest", "folder": "", "entity_type": "test"},
     )
     await client.post(
-        f"{project_url}/knowledge/entities", json={"title": "BetaTest", "folder": "", "entity_type": "test"}
+        f"{project_url}/knowledge/entities",
+        json={"title": "BetaTest", "folder": "", "entity_type": "test"},
     )
 
     # Open nodes by path IDs
@@ -173,7 +176,9 @@ async def test_delete_entity(client: AsyncClient, project_url):
     await client.post(f"{project_url}/knowledge/entities", json=entity_data)
 
     # Test deletion
-    response = await client.post(f"{project_url}/knowledge/entities/delete", json={"permalinks": ["test-entity"]})
+    response = await client.post(
+        f"{project_url}/knowledge/entities/delete", json={"permalinks": ["test-entity"]}
+    )
     assert response.status_code == 200
     assert response.json() == {"deleted": True}
 
@@ -235,8 +240,12 @@ async def test_delete_single_entity_not_found(client: AsyncClient, project_url):
 async def test_delete_entity_bulk(client: AsyncClient, project_url):
     """Test bulk entity deletion using path IDs."""
     # Create test entities
-    await client.post(f"{project_url}/knowledge/entities", json={"file_path": "Entity1", "entity_type": "test"})
-    await client.post(f"{project_url}/knowledge/entities", json={"file_path": "Entity2", "entity_type": "test"})
+    await client.post(
+        f"{project_url}/knowledge/entities", json={"file_path": "Entity1", "entity_type": "test"}
+    )
+    await client.post(
+        f"{project_url}/knowledge/entities", json={"file_path": "Entity2", "entity_type": "test"}
+    )
 
     # Test deletion
     response = await client.post(
@@ -279,7 +288,8 @@ async def test_entity_indexing(client: AsyncClient, project_url):
 
     # Verify it's searchable
     search_response = await client.post(
-        f"{project_url}/search/", json={"text": "search", "entity_types": [SearchItemType.ENTITY.value]}
+        f"{project_url}/search/",
+        json={"text": "search", "entity_types": [SearchItemType.ENTITY.value]},
     )
     assert search_response.status_code == 200
     search_result = SearchResponse.model_validate(search_response.json())
@@ -307,7 +317,8 @@ async def test_entity_delete_indexing(client: AsyncClient, project_url):
 
     # Verify it's initially searchable
     search_response = await client.post(
-        f"{project_url}/search/", json={"text": "delete", "entity_types": [SearchItemType.ENTITY.value]}
+        f"{project_url}/search/",
+        json={"text": "delete", "entity_types": [SearchItemType.ENTITY.value]},
     )
     search_result = SearchResponse.model_validate(search_response.json())
     assert len(search_result.results) == 1
@@ -347,7 +358,9 @@ async def test_update_entity_basic(client: AsyncClient, project_url):
     entity.entity_metadata["status"] = "final"
     entity.content = "Updated summary"
 
-    response = await client.put(f"{project_url}/knowledge/entities/{entity.permalink}", json=entity.model_dump())
+    response = await client.put(
+        f"{project_url}/knowledge/entities/{entity.permalink}", json=entity.model_dump()
+    )
     assert response.status_code == 200
     updated = response.json()
 
@@ -442,7 +455,9 @@ async def test_update_entity_metadata(client: AsyncClient, project_url):
     entity.entity_metadata["reviewed"] = True
 
     # Update metadata
-    response = await client.put(f"{project_url}/knowledge/entities/{entity.permalink}", json=entity.model_dump())
+    response = await client.put(
+        f"{project_url}/knowledge/entities/{entity.permalink}", json=entity.model_dump()
+    )
     assert response.status_code == 200
     updated = response.json()
 
@@ -462,7 +477,9 @@ async def test_update_entity_not_found_does_create(client: AsyncClient, project_
         "observations": ["First observation", "Second observation"],
     }
     entity = Entity(**data)
-    response = await client.put(f"{project_url}/knowledge/entities/nonexistent", json=entity.model_dump())
+    response = await client.put(
+        f"{project_url}/knowledge/entities/nonexistent", json=entity.model_dump()
+    )
     assert response.status_code == 201
 
 
@@ -477,7 +494,9 @@ async def test_update_entity_incorrect_permalink(client: AsyncClient, project_ur
         "observations": ["First observation", "Second observation"],
     }
     entity = Entity(**data)
-    response = await client.put(f"{project_url}/knowledge/entities/nonexistent", json=entity.model_dump())
+    response = await client.put(
+        f"{project_url}/knowledge/entities/nonexistent", json=entity.model_dump()
+    )
     assert response.status_code == 400
 
 
@@ -498,12 +517,15 @@ async def test_update_entity_search_index(client: AsyncClient, project_url):
     entity = Entity(**entity_response, folder="")
     entity.content = "Updated with unique sphinx marker"
 
-    response = await client.put(f"{project_url}/knowledge/entities/{entity.permalink}", json=entity.model_dump())
+    response = await client.put(
+        f"{project_url}/knowledge/entities/{entity.permalink}", json=entity.model_dump()
+    )
     assert response.status_code == 200
 
     # Search should find new content
     search_response = await client.post(
-        f"{project_url}/search/", json={"text": "sphinx marker", "entity_types": [SearchItemType.ENTITY.value]}
+        f"{project_url}/search/",
+        json={"text": "sphinx marker", "entity_types": [SearchItemType.ENTITY.value]},
     )
     results = search_response.json()["results"]
     assert len(results) == 1

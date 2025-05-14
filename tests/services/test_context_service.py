@@ -8,7 +8,7 @@ import pytest_asyncio
 from basic_memory.repository.search_repository import SearchIndexRow
 from basic_memory.schemas.memory import memory_url, memory_url_path
 from basic_memory.schemas.search import SearchItemType
-from basic_memory.services.context_service import ContextService, ContextResult, ContextResultRow, ContextResultItem
+from basic_memory.services.context_service import ContextService
 
 
 @pytest_asyncio.fixture
@@ -42,7 +42,9 @@ async def test_find_connected_depth_limit(context_service, test_graph):
 
 
 @pytest.mark.asyncio
-async def test_find_connected_timeframe(context_service, test_graph, search_repository, entity_repository):
+async def test_find_connected_timeframe(
+    context_service, test_graph, search_repository, entity_repository
+):
     """Test timeframe filtering.
     This tests how traversal is affected by the item dates.
     When we filter by date, items are only included if:
@@ -55,13 +57,15 @@ async def test_find_connected_timeframe(context_service, test_graph, search_repo
 
     # Update entity table timestamps directly
     # Root entity uses old date
-    root_entity = test_graph["root"] 
+    root_entity = test_graph["root"]
     await entity_repository.update(root_entity.id, {"created_at": old_date, "updated_at": old_date})
-    
+
     # Connected entity uses recent date
     connected_entity = test_graph["connected1"]
-    await entity_repository.update(connected_entity.id, {"created_at": recent_date, "updated_at": recent_date})
-    
+    await entity_repository.update(
+        connected_entity.id, {"created_at": recent_date, "updated_at": recent_date}
+    )
+
     # Also update search_index for test consistency
     await search_repository.index_item(
         SearchIndexRow(
@@ -108,7 +112,7 @@ async def test_find_connected_timeframe(context_service, test_graph, search_repo
             updated_at=recent_date.isoformat(),
         )
     )
-    
+
     type_id_pairs = [("entity", test_graph["root"].id)]
 
     # Search with a 7-day cutoff
@@ -127,18 +131,18 @@ async def test_build_context(context_service, test_graph):
     """Test exact permalink lookup."""
     url = memory_url.validate_strings("memory://test/root")
     context_result = await context_service.build_context(url)
-    
+
     # Check metadata
     assert context_result.metadata.uri == memory_url_path(url)
     assert context_result.metadata.depth == 1
     assert context_result.metadata.primary_count == 1
     assert context_result.metadata.related_count > 0
     assert context_result.metadata.generated_at is not None
-    
+
     # Check results
     assert len(context_result.results) == 1
     context_item = context_result.results[0]
-    
+
     # Check primary result
     primary_result = context_item.primary_result
     assert primary_result.id == test_graph["root"].id
@@ -147,17 +151,17 @@ async def test_build_context(context_service, test_graph):
     assert primary_result.permalink == "test/root"
     assert primary_result.file_path == "test/Root.md"
     assert primary_result.created_at is not None
-    
+
     # Check related results
     assert len(context_item.related_results) > 0
-    
+
     # Find related relation
     relation = next((r for r in context_item.related_results if r.type == "relation"), None)
     assert relation is not None
     assert relation.relation_type == "connects_to"
     assert relation.from_id == test_graph["root"].id
     assert relation.to_id == test_graph["connected1"].id
-    
+
     # Find related entity
     related_entity = next((r for r in context_item.related_results if r.type == "entity"), None)
     assert related_entity is not None
@@ -171,25 +175,25 @@ async def test_build_context_with_observations(context_service, test_graph):
     """Test context building with observations."""
     # The test_graph fixture already creates observations for root entity
     # Let's use those existing observations
-    
+
     # Build context
     url = memory_url.validate_strings("memory://test/root")
     context_result = await context_service.build_context(url, include_observations=True)
-    
+
     # Check the metadata
     assert context_result.metadata.total_observations > 0
     assert len(context_result.results) == 1
-    
+
     # Check that observations were included
     context_item = context_result.results[0]
     assert len(context_item.observations) > 0
-    
+
     # Check observation properties
     for observation in context_item.observations:
         assert observation.type == "observation"
         assert observation.category in ["note", "tech"]  # Categories from test_graph fixture
         assert observation.entity_id == test_graph["root"].id
-        
+
     # Verify at least one observation has the correct category and content
     note_observation = next((o for o in context_item.observations if o.category == "note"), None)
     assert note_observation is not None

@@ -55,7 +55,7 @@ def import_projects(
         # Process the file
         base_path = config.home / base_folder if base_folder else config.home
         console.print(f"\nImporting projects from {projects_json}...writing to {base_path}")
-        
+
         # Run the import
         with projects_json.open("r", encoding="utf-8") as file:
             json_data = json.load(file)

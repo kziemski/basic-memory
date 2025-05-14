@@ -31,7 +31,7 @@ class Repository[T: Base]:
         self,
         session_maker: async_sessionmaker[AsyncSession],
         Model: Type[T],
-        project_id: Optional[int] = None
+        project_id: Optional[int] = None,
     ):
         self.session_maker = session_maker
         self.project_id = project_id
@@ -128,7 +128,6 @@ class Repository[T: Base]:
         :return: the added models instances
         """
         async with db.scoped_session(self.session_maker) as session:
-
             # set the project id if not present in models
             for model in models:
                 self._set_project_id_if_needed(model)
@@ -206,7 +205,11 @@ class Repository[T: Base]:
             model_data = self.get_model_data(data)
 
             # Add project_id if applicable and not already provided
-            if self.has_project_id and self.project_id is not None and "project_id" not in model_data:
+            if (
+                self.has_project_id
+                and self.project_id is not None
+                and "project_id" not in model_data
+            ):
                 model_data["project_id"] = self.project_id
 
             model = self.Model(**model_data)
@@ -236,7 +239,11 @@ class Repository[T: Base]:
                 model_data = self.get_model_data(d)
 
                 # Add project_id if applicable and not already provided
-                if self.has_project_id and self.project_id is not None and "project_id" not in model_data:
+                if (
+                    self.has_project_id
+                    and self.project_id is not None
+                    and "project_id" not in model_data
+                ):
                     model_data["project_id"] = self.project_id
 
                 model_list.append(self.Model(**model_data))
@@ -329,7 +336,11 @@ class Repository[T: Base]:
             if query is None:
                 query = select(func.count()).select_from(self.Model)
                 # Add project filter if applicable
-                if isinstance(query, Select) and self.has_project_id and self.project_id is not None:
+                if (
+                    isinstance(query, Select)
+                    and self.has_project_id
+                    and self.project_id is not None
+                ):
                     query = query.where(getattr(self.Model, "project_id") == self.project_id)
 
             result = await session.execute(query)

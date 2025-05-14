@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
 from loguru import logger
 from sqlalchemy import text
@@ -36,6 +36,7 @@ class ContextResultRow:
 @dataclass
 class ContextResultItem:
     """A hierarchical result containing a primary item with its observations and related items."""
+
     primary_result: ContextResultRow | SearchIndexRow
     observations: List[ContextResultRow] = field(default_factory=list)
     related_results: List[ContextResultRow] = field(default_factory=list)
@@ -44,6 +45,7 @@ class ContextResultItem:
 @dataclass
 class ContextMetadata:
     """Metadata about a context result."""
+
     uri: Optional[str] = None
     types: Optional[List[SearchItemType]] = None
     depth: int = 1
@@ -58,6 +60,7 @@ class ContextMetadata:
 @dataclass
 class ContextResult:
     """Complete context result with metadata."""
+
     results: List[ContextResultItem] = field(default_factory=list)
     metadata: ContextMetadata = field(default_factory=ContextMetadata)
 
@@ -128,25 +131,24 @@ class ContextService:
             type_id_pairs, max_depth=depth, since=since, max_results=max_related
         )
         logger.debug(f"Found {len(related)} related results")
-        
+
         # Collect entity IDs from primary and related results
         entity_ids = []
         for result in primary:
             if result.type == SearchItemType.ENTITY.value:
-                
                 entity_ids.append(result.id)
-        
+
         for result in related:
             if result.type == SearchItemType.ENTITY.value:
                 entity_ids.append(result.id)
-                
+
         # Fetch observations for all entities if requested
         observations_by_entity = {}
         if include_observations and entity_ids:
             # Use our observation repository to get observations for all entities at once
             observations_by_entity = await self.observation_repository.find_by_entities(entity_ids)
             logger.debug(f"Found observations for {len(observations_by_entity)} entities")
-            
+
         # Create metadata dataclass
         metadata = ContextMetadata(
             uri=memory_url_path(memory_url) if memory_url else None,
@@ -158,15 +160,15 @@ class ContextService:
             total_observations=sum(len(obs) for obs in observations_by_entity.values()),
             total_relations=sum(1 for r in related if r.type == SearchItemType.RELATION),
         )
-        
+
         # Build context results list directly with ContextResultItem objects
         context_results = []
-        
+
         # For each primary result
         for primary_item in primary:
             # Find all related items with this primary item as root
             related_to_primary = [r for r in related if r.root_id == primary_item.id]
-            
+
             # Get observations for this item if it's an entity
             item_observations = []
             if primary_item.type == SearchItemType.ENTITY.value and include_observations:
@@ -177,31 +179,30 @@ class ContextService:
                             type="observation",
                             id=obs.id,
                             title=f"{obs.category}: {obs.content[:50]}...",
-                            permalink=generate_permalink(f"{primary_item.permalink}/observations/{obs.category}/{obs.content}"),
+                            permalink=generate_permalink(
+                                f"{primary_item.permalink}/observations/{obs.category}/{obs.content}"
+                            ),
                             file_path=primary_item.file_path,
                             content=obs.content,
                             category=obs.category,
                             entity_id=primary_item.id,
                             depth=0,
                             root_id=primary_item.id,
-                            created_at=primary_item.created_at, # created_at time from entity
+                            created_at=primary_item.created_at,  # created_at time from entity
                         )
                     )
-            
+
             # Create ContextResultItem directly
             context_item = ContextResultItem(
                 primary_result=primary_item,
                 observations=item_observations,
-                related_results=related_to_primary
+                related_results=related_to_primary,
             )
-            
+
             context_results.append(context_item)
-            
+
         # Return the structured ContextResult
-        return ContextResult(
-            results=context_results,
-            metadata=metadata
-        )
+        return ContextResult(results=context_results, metadata=metadata)
 
     async def find_related(
         self,
@@ -228,26 +229,25 @@ class ContextService:
             return []
 
         # Extract entity IDs from type_id_pairs for the optimized query
-        entity_ids = [i for t, i in type_id_pairs if t == 'entity']
-        
+        entity_ids = [i for t, i in type_id_pairs if t == "entity"]
+
         if not entity_ids:
             logger.debug("No entity IDs found in type_id_pairs")
             return []
 
-        logger.debug(f"Finding connected items for {len(entity_ids)} entities with depth {max_depth}")
-        
+        logger.debug(
+            f"Finding connected items for {len(entity_ids)} entities with depth {max_depth}"
+        )
+
         # Build the VALUES clause for entity IDs
         entity_id_values = ", ".join([str(i) for i in entity_ids])
-        
+
         # For compatibility with the old query, we still need this for filtering
         values = ", ".join([f"('{t}', {i})" for t, i in type_id_pairs])
-        
+
         # Parameters for bindings
-        params = {
-            "max_depth": max_depth, 
-            "max_results": max_results
-        }
-        
+        params = {"max_depth": max_depth, "max_results": max_results}
+
         # Build date and timeframe filters conditionally based on since parameter
         if since:
             params["since_date"] = since.isoformat()  # pyright: ignore
@@ -258,7 +258,7 @@ class ContextService:
             date_filter = ""
             relation_date_filter = ""
             timeframe_condition = ""
-        
+
         # Use a CTE that operates directly on entity and relation tables
         # This avoids the overhead of the search_index virtual table
         query = text(f"""

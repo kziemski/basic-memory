@@ -116,7 +116,7 @@ async def recent_activity(
         params["type"] = [t.value for t in validated_types]  # pyright: ignore
 
     project_url = get_project_config().project_url
-    
+
     response = await call_get(
         client,
         f"{project_url}/memory/recent",

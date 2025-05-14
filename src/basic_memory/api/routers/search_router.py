@@ -1,13 +1,10 @@
 """Router for search operations."""
-from typing import List
 
 from fastapi import APIRouter, BackgroundTasks
 
 from basic_memory.api.routers.utils import to_search_results
-from basic_memory.repository.search_repository import SearchIndexRow
-from basic_memory.schemas.search import SearchQuery, SearchResult, SearchResponse
+from basic_memory.schemas.search import SearchQuery, SearchResponse
 from basic_memory.deps import SearchServiceDep, EntityServiceDep
-from basic_memory.services import EntityService
 
 router = APIRouter(prefix="/search", tags=["search"])
 
@@ -30,7 +27,6 @@ async def search(
         current_page=page,
         page_size=page_size,
     )
-
 
 
 @router.post("/reindex")

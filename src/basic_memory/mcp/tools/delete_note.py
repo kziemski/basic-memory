@@ -25,7 +25,7 @@ async def delete_note(identifier: str) -> bool:
         delete_note("notes/project-planning")
     """
     project_url = get_project_config().project_url
-    
+
     response = await call_delete(client, f"{project_url}/knowledge/entities/{identifier}")
     result = DeleteEntitiesResponse.model_validate(response.json())
     return result.deleted
