@@ -17,7 +17,7 @@ async def get_directory_tree(
     Returns:
         DirectoryNode representing the root of the hierarchical tree structure
     """
-    # Get hierarchical directory tree
+    # Get a hierarchical directory tree
     tree = await directory_service.get_directory_tree()
 
     # Return the hierarchical tree
