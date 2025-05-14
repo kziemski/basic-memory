@@ -12,6 +12,7 @@ from basic_memory.services.initialization import (
     reconcile_projects_with_config,
     migrate_legacy_projects,
     migrate_legacy_project_data,
+    initialize_file_sync,
 )
 
 
@@ -45,7 +46,7 @@ async def test_initialize_app(
     app_config
 ):
     """Test app initialization."""
-    mock_initialize_file_sync.return_value = "task"
+    mock_initialize_file_sync.return_value = None
 
     result = await initialize_app(app_config)
 
@@ -53,7 +54,7 @@ async def test_initialize_app(
     mock_reconcile_projects.assert_called_once_with(app_config)
     mock_migrate_legacy_projects.assert_called_once_with(app_config)
     mock_initialize_file_sync.assert_called_once_with(app_config)
-    assert result == "task"
+    assert result is None
 
 
 @pytest.mark.asyncio
@@ -95,6 +96,7 @@ async def test_reconcile_projects_with_config(mock_get_db, app_config):
     mock_repository = AsyncMock()
     mock_project = MagicMock()
     mock_project.name = "test_project"
+    mock_project.id = 1
     
     # Mock the repository and its methods
     with patch("basic_memory.services.initialization.ProjectRepository") as mock_repo_class:
@@ -102,8 +104,8 @@ async def test_reconcile_projects_with_config(mock_get_db, app_config):
         mock_repository.find_all.return_value = [mock_project]
         mock_repository.get_by_name.return_value = mock_project
         
-        # Set up app_config projects
-        app_config.projects = [("test_project", "/path/to/project"), ("new_project", "/path/to/new")]
+        # Set up app_config projects as a dictionary
+        app_config.projects = {"test_project": "/path/to/project", "new_project": "/path/to/new"}
         app_config.default_project = "test_project"
         
         # Run the function
@@ -132,8 +134,8 @@ async def test_reconcile_projects_with_missing_default(mock_get_db, app_config):
         mock_repository.find_all.return_value = []
         mock_repository.get_by_name.return_value = None
         
-        # Set up app_config projects
-        app_config.projects = [("test_project", "/path/to/project")]
+        # Set up app_config projects as a dictionary
+        app_config.projects = {"test_project": "/path/to/project"}
         app_config.default_project = "missing_project"
         
         # Run the function and assert it raises an error
@@ -162,8 +164,8 @@ async def test_migrate_legacy_projects_no_legacy_dirs(mock_get_db, app_config):
         
         mock_repo_class.return_value = mock_repository
         
-        # Set up app_config projects
-        app_config.projects = [("test_project", "/path/to/project")]
+        # Set up app_config projects as a dictionary
+        app_config.projects = {"test_project": "/path/to/project"}
         
         # Run the function
         await migrate_legacy_projects(app_config)
@@ -198,8 +200,8 @@ async def test_migrate_legacy_projects_with_legacy_dirs(
         mock_repo_class.return_value = mock_repository
         mock_repository.get_by_name.return_value = mock_project
         
-        # Set up app_config projects
-        app_config.projects = [("test_project", str(tmp_path))]
+        # Set up app_config projects as a dictionary
+        app_config.projects = {"test_project": str(tmp_path)}
         
         # Run the function
         with patch("basic_memory.services.initialization.Path", lambda x: Path(x)):
@@ -265,3 +267,60 @@ async def test_migrate_legacy_project_data_rmtree_error(mock_rmtree, tmp_path):
     mock_sync_service.sync.assert_called_once_with(Path(mock_project.path))
     mock_rmtree.assert_called_once_with(legacy_dir)
     assert result is False
+
+
+@pytest.mark.asyncio
+@patch("basic_memory.services.initialization.db.get_or_create_db")
+@patch("basic_memory.cli.commands.sync.get_sync_service")
+@patch("basic_memory.sync.WatchService")
+async def test_initialize_file_sync_sequential(mock_watch_service_class, mock_get_sync_service, mock_get_db, app_config):
+    """Test file sync initialization with sequential project processing."""
+    # Setup mocks
+    mock_session_maker = AsyncMock()
+    mock_get_db.return_value = (None, mock_session_maker)
+    
+    mock_watch_service = AsyncMock()
+    mock_watch_service.run = AsyncMock()
+    mock_watch_service_class.return_value = mock_watch_service
+    
+    mock_repository = AsyncMock()
+    mock_project1 = MagicMock()
+    mock_project1.name = "project1"
+    mock_project1.path = "/path/to/project1"
+    mock_project1.id = 1
+    
+    mock_project2 = MagicMock()
+    mock_project2.name = "project2"
+    mock_project2.path = "/path/to/project2"
+    mock_project2.id = 2
+    
+    mock_sync_service = AsyncMock()
+    mock_sync_service.sync = AsyncMock()
+    mock_get_sync_service.return_value = mock_sync_service
+    
+    # Mock the repository
+    with patch("basic_memory.services.initialization.ProjectRepository") as mock_repo_class:
+        mock_repo_class.return_value = mock_repository
+        mock_repository.get_active_projects.return_value = [mock_project1, mock_project2]
+        
+        # Run the function
+        result = await initialize_file_sync(app_config)
+        
+        # Assertions
+        mock_repository.get_active_projects.assert_called_once()
+        
+        # Should call sync for each project sequentially
+        assert mock_get_sync_service.call_count == 2
+        mock_get_sync_service.assert_any_call(mock_project1)
+        mock_get_sync_service.assert_any_call(mock_project2)
+        
+        # Should call sync on each project
+        assert mock_sync_service.sync.call_count == 2
+        mock_sync_service.sync.assert_any_call(Path(mock_project1.path))
+        mock_sync_service.sync.assert_any_call(Path(mock_project2.path))
+        
+        # Should start the watch service
+        mock_watch_service.run.assert_called_once()
+        
+        # Should return None
+        assert result is None
