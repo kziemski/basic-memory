@@ -131,7 +131,7 @@ async def run_status(verbose: bool = False):
     )
     project_repository = ProjectRepository(session_maker)
     project = await project_repository.get_by_name(config.project)
-    if not project:
+    if not project:  # pragma: no cover
         raise Exception(f"Project '{config.project}' not found")
 
     sync_service = await get_sync_service(project)

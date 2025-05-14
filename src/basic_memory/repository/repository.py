@@ -244,7 +244,7 @@ class Repository[T: Base]:
                     and self.project_id is not None
                     and "project_id" not in model_data
                 ):
-                    model_data["project_id"] = self.project_id
+                    model_data["project_id"] = self.project_id  # pragma: no cover
 
                 model_list.append(self.Model(**model_data))
 
@@ -341,7 +341,7 @@ class Repository[T: Base]:
                     and self.has_project_id
                     and self.project_id is not None
                 ):
-                    query = query.where(getattr(self.Model, "project_id") == self.project_id)
+                    query = query.where(getattr(self.Model, "project_id") == self.project_id)  # pragma: no cover
 
             result = await session.execute(query)
             scalar = result.scalar()

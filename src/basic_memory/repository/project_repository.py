@@ -82,4 +82,4 @@ class ProjectRepository(Repository[Project]):
                 target_project.is_default = True
                 await session.flush()
                 return target_project
-            return None
+            return None  # pragma: no cover

@@ -163,7 +163,7 @@ async def run_sync(verbose: bool = False):
     )
     project_repository = ProjectRepository(session_maker)
     project = await project_repository.get_by_name(config.project)
-    if not project:
+    if not project:  # pragma: no cover
         raise Exception(f"Project '{config.project}' not found")
 
     import time

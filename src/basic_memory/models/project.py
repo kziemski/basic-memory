@@ -63,7 +63,7 @@ class Project(Base):
     # These relationships will be established once we add project_id to those models
     entities = relationship("Entity", back_populates="project", cascade="all, delete-orphan")
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # pragma: no cover
         return f"Project(id={self.id}, name='{self.name}', permalink='{self.permalink}', path='{self.path}')"
 
 

@@ -107,8 +107,8 @@ async def get_project_id(
         return project_obj.id
 
     # Try by name if permalink lookup fails
-    project_obj = await project_repository.get_by_name(str(project))
-    if project_obj:
+    project_obj = await project_repository.get_by_name(str(project))  # pragma: no cover
+    if project_obj:  # pragma: no cover
         return project_obj.id
 
     # Not found

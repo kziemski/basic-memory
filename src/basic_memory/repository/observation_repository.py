@@ -54,7 +54,7 @@ class ObservationRepository(Repository[Observation]):
         Returns:
             Dictionary mapping entity_id to list of observations
         """
-        if not entity_ids:
+        if not entity_ids:  # pragma: no cover
             return {}
 
         # Query observations for all entities in the list

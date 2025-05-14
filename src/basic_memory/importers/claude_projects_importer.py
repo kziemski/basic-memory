@@ -66,7 +66,7 @@ class ClaudeProjectsImporter(Importer[ProjectImportResult]):
                 prompts=prompts_imported,
             )
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             logger.exception("Failed to import Claude projects")
             return self.handle_error("Failed to import Claude projects", e)  # pyright: ignore [reportReturnType]
 

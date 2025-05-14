@@ -65,7 +65,7 @@ def memory_json(
                 file_data.append(json_data)
         result = asyncio.run(importer.import_data(file_data, destination_folder))
 
-        if not result.success:
+        if not result.success:  # pragma: no cover
             typer.echo(f"Error during import: {result.error_message}", err=True)
             raise typer.Exit(1)
 

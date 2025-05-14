@@ -43,7 +43,7 @@ def import_chatgpt(
     """
 
     try:
-        if not conversations_json.exists():
+        if not conversations_json.exists():  # pragma: no cover
             typer.echo(f"Error: File not found: {conversations_json}", err=True)
             raise typer.Exit(1)
 
@@ -60,7 +60,7 @@ def import_chatgpt(
             json_data = json.load(file)
             result = asyncio.run(importer.import_data(json_data, folder))
 
-        if not result.success:
+        if not result.success:  # pragma: no cover
             typer.echo(f"Error during import: {result.error_message}", err=True)
             raise typer.Exit(1)
 

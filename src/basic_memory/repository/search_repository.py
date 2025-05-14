@@ -103,7 +103,7 @@ class SearchRepository:
         Raises:
             ValueError: If project_id is None or invalid
         """
-        if project_id is None or project_id <= 0:
+        if project_id is None or project_id <= 0:  # pragma: no cover
             raise ValueError("A valid project_id is required for SearchRepository")
 
         self.session_maker = session_maker

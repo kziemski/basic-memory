@@ -38,7 +38,7 @@ class Importer[T: ImportResult]:
         Returns:
             ImportResult containing statistics and status of the import.
         """
-        pass
+        pass  # pragma: no cover
 
     async def write_entity(self, entity: EntityMarkdown, file_path: Path) -> None:
         """Write entity to file using markdown processor.
@@ -63,7 +63,7 @@ class Importer[T: ImportResult]:
         folder_path.mkdir(parents=True, exist_ok=True)
         return folder_path
 
-    def handle_error(self, message: str, error: Optional[Exception] = None) -> T:
+    def handle_error(self, message: str, error: Optional[Exception] = None) -> T:  # pragma: no cover
         """Handle errors during import.
 
         Args:

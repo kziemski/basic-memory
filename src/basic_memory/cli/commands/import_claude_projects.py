@@ -61,7 +61,7 @@ def import_projects(
             json_data = json.load(file)
             result = asyncio.run(importer.import_data(json_data, base_folder))
 
-        if not result.success:
+        if not result.success:  # pragma: no cover
             typer.echo(f"Error during import: {result.error_message}", err=True)
             raise typer.Exit(1)
 

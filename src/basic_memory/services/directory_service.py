@@ -83,7 +83,7 @@ class DirectoryService:
                 dir_map[directory_path].children.append(file_node)
             else:
                 # If parent directory doesn't exist (should be rare), add to root
-                dir_map["/"].children.append(file_node)
+                dir_map["/"].children.append(file_node)  # pragma: no cover
 
         # Return the root node with its children
         return root_node

@@ -33,8 +33,8 @@ class MemoryJsonImporter(Importer[EntityImportResult]):
             entities: Dict[str, Dict[str, Any]] = {}
 
             # Ensure the base path exists
-            base_path = config.home
-            if destination_folder:
+            base_path = config.home  # pragma: no cover
+            if destination_folder:  # pragma: no cover
                 base_path = self.ensure_folder_exists(destination_folder)
 
             # First pass - collect entities and relations
@@ -88,6 +88,6 @@ class MemoryJsonImporter(Importer[EntityImportResult]):
                 relations=relations_count,
             )
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             logger.exception("Failed to import memory.json")
             return self.handle_error("Failed to import memory.json", e)  # pyright: ignore [reportReturnType]

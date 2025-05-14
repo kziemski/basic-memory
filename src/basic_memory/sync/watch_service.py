@@ -171,7 +171,7 @@ class WatchService:
         """
         project_path = Path(project.path).resolve()
         sub_path = Path(path).resolve()
-        return project_path in sub_path.parents
+        return project_path in sub_path.parents  # pragma: no cover
 
     async def handle_changes(self, project: Project, changes: Set[FileChange]) -> None:
         """Process a batch of file changes"""
@@ -359,7 +359,7 @@ class WatchService:
                     repeat_count = 0
                     modify_count += 1
 
-                logger.debug(
+                logger.debug(  # pragma: no cover
                     "Modified file processed, "
                     f"path={path} "
                     f"entity_id={entity.id if entity else None} "

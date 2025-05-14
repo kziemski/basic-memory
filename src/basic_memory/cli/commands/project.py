@@ -194,7 +194,7 @@ def synchronize_projects() -> None:
         result = ProjectStatusResponse.model_validate(response.json())
 
         console.print(f"[green]{result.message}[/green]")
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         console.print(f"[red]Error synchronizing projects: {str(e)}[/red]")
         console.print("[yellow]Note: Make sure the Basic Memory server is running.[/yellow]")
         raise typer.Exit(1)

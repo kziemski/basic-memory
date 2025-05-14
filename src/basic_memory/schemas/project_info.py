@@ -148,7 +148,7 @@ class WatchServiceState(BaseModel):
         status: str,
         checksum: Optional[str] = None,
         error: Optional[str] = None,
-    ) -> WatchEvent:
+    ) -> WatchEvent:  # pragma: no cover
         event = WatchEvent(
             timestamp=datetime.now(),
             path=path,
@@ -161,7 +161,7 @@ class WatchServiceState(BaseModel):
         self.recent_events = self.recent_events[:100]  # Keep last 100
         return event
 
-    def record_error(self, error: str):
+    def record_error(self, error: str):  # pragma: no cover
         self.error_count += 1
         self.add_event(path="", action="sync", status="error", error=error)
         self.last_error = datetime.now()

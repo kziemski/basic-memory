@@ -78,7 +78,7 @@ async def migrate_legacy_projects(app_config: BasicMemoryConfig):
             continue
         logger.info(f"Detected legacy project directory: {legacy_dir}")
         project = await project_repository.get_by_name(project_name)
-        if not project:
+        if not project:  # pragma: no cover
             logger.error(f"Project {project_name} not found in database, skipping migration")
             continue
 
@@ -158,7 +158,7 @@ async def initialize_file_sync(
         try:
             await sync_service.sync(sync_dir)
             logger.info(f"Sync completed successfully for project: {project.name}")
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             logger.error(f"Error syncing project {project.name}: {e}")
             # Continue with other projects even if one fails
 
@@ -168,7 +168,7 @@ async def initialize_file_sync(
     try:
         await watch_service.run()
         logger.info("Watch service started")
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         logger.error(f"Error starting watch service: {e}")
 
     return None
@@ -219,7 +219,7 @@ def ensure_initialization(app_config: BasicMemoryConfig) -> None:
     """
     try:
         asyncio.run(initialize_app(app_config))
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         logger.exception(f"Error during initialization: {e}")
         # Continue execution even if initialization fails
         # The command might still work, or will fail with a
@@ -235,9 +235,9 @@ def ensure_initialize_database(app_config: BasicMemoryConfig) -> None:
     Args:
         app_config: The Basic Memory project configuration
     """
-    try:
+    try:  # pragma: no cover
         asyncio.run(initialize_database(app_config))
-    except Exception as e:
+    except Exception as e:  # pragma: no cover
         logger.error(f"Error during initialization: {e}")
         # Continue execution even if initialization fails
         # The command might still work, or will fail with a

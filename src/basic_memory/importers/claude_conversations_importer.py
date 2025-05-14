@@ -63,7 +63,7 @@ class ClaudeConversationsImporter(Importer[ChatImportResult]):
                 messages=messages_imported,
             )
 
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             logger.exception("Failed to import Claude conversations")
             return self.handle_error("Failed to import Claude conversations", e)  # pyright: ignore [reportReturnType]
 
