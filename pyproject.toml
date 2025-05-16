@@ -32,6 +32,7 @@ dependencies = [
     "pillow>=11.1.0",
     "python-liquid>=2.0.1",
     "pybars3>=0.9.7",
+    "fastmcp>=2.3.4",
 ]
 
 

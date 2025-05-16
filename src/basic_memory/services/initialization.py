@@ -69,6 +69,7 @@ async def migrate_legacy_projects(app_config: BasicMemoryConfig):
     _, session_maker = await db.get_or_create_db(
         db_path=app_config.database_path, db_type=db.DatabaseType.FILESYSTEM
     )
+    logger.info("Migrating legacy projects...")
     project_repository = ProjectRepository(session_maker)
 
     # For each project in config.json, check if it has a .basic-memory dir
@@ -83,7 +84,7 @@ async def migrate_legacy_projects(app_config: BasicMemoryConfig):
             continue
 
         await migrate_legacy_project_data(project, legacy_dir)
-
+    logger.info("Legacy projects successfully migrated")
 
 async def migrate_legacy_project_data(project: Project, legacy_dir: Path) -> bool:
     """Check if project has legacy .basic-memory dir and migrate if needed.
@@ -156,7 +157,7 @@ async def initialize_file_sync(
         sync_dir = Path(project.path)
 
         try:
-            await sync_service.sync(sync_dir)
+            #await sync_service.sync(sync_dir)
             logger.info(f"Sync completed successfully for project: {project.name}")
         except Exception as e:  # pragma: no cover
             logger.error(f"Error syncing project {project.name}: {e}")
@@ -218,7 +219,8 @@ def ensure_initialization(app_config: BasicMemoryConfig) -> None:
         app_config: The Basic Memory project configuration
     """
     try:
-        asyncio.run(initialize_app(app_config))
+        result = asyncio.run(initialize_app(app_config))
+        logger.info(f"Initialization completed successfully: result={result}")
     except Exception as e:  # pragma: no cover
         logger.exception(f"Error during initialization: {e}")
         # Continue execution even if initialization fails

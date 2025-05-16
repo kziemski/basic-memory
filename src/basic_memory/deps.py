@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from basic_memory import db
-from basic_memory.config import ProjectConfig, config
+from basic_memory.config import ProjectConfig, config, BasicMemoryConfig
 from basic_memory.importers import (
     ChatGPTImporter,
     ClaudeConversationsImporter,
@@ -33,6 +33,11 @@ from basic_memory.services.search_service import SearchService
 from basic_memory.sync import SyncService
 from basic_memory.config import app_config
 
+def get_app_config() -> BasicMemoryConfig:  # pragma: no cover
+    return app_config
+AppConfigDep = Annotated[BasicMemoryConfig, Depends(get_app_config)]  # pragma: no cover
+
+
 ## project
 
 
@@ -46,10 +51,10 @@ ProjectConfigDep = Annotated[ProjectConfig, Depends(get_project_config)]  # prag
 
 
 async def get_engine_factory(
-    project_config: ProjectConfigDep,
+    app_config: AppConfigDep,
 ) -> tuple[AsyncEngine, async_sessionmaker[AsyncSession]]:  # pragma: no cover
     """Get engine and session maker."""
-    engine, session_maker = await db.get_or_create_db(project_config.database_path)
+    engine, session_maker = await db.get_or_create_db(app_config.database_path)
     return engine, session_maker
 
 

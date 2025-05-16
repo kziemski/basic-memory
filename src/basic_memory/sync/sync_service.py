@@ -133,7 +133,7 @@ class SyncService:
         """Scan directory for changes compared to database state."""
 
         db_paths = await self.get_db_file_state()
-        logger.debug(f"Found {len(db_paths)} db paths")
+        logger.info(f"Scanning directory {directory}. Found {len(db_paths)} db paths")
 
         # Track potentially moved files by checksum
         scan_result = await self.scan_directory(directory)
@@ -173,6 +173,7 @@ class SyncService:
                 # deleted
                 else:
                     report.deleted.add(db_path)
+        logger.info(f"Completed scan for directory {directory}, found {report.total} changes.")
         return report
 
     async def get_db_file_state(self) -> Dict[str, str]:

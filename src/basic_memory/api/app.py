@@ -27,6 +27,7 @@ from basic_memory.services.initialization import initialize_app
 async def lifespan(app: FastAPI):  # pragma: no cover
     """Lifecycle manager for the FastAPI app."""
     # Initialize database and file sync services
+    logger.info("Starting Basic Memory API")
     app.state.watch_task = await initialize_app(app_config)
 
     # proceed with startup

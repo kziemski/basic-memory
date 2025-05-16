@@ -52,7 +52,8 @@ class BasicMemoryConfig(BaseSettings):
         description="Name of the default project to use",
     )
 
-    log_level: str = "DEBUG"
+    # overridden by ~/.basic-memory/config.json
+    log_level: str = "INFO"
 
     # Watch service configuration
     sync_delay: int = Field(
