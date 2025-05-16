@@ -119,7 +119,7 @@ async def migrate_legacy_project_data(project: Project, legacy_dir: Path) -> boo
 async def initialize_file_sync(
     app_config: BasicMemoryConfig,
 ):
-    """Initialize file synchronization services.
+    """Initialize file synchronization services. This function starts the watch service and does not return
 
     Args:
         app_config: The Basic Memory project configuration
@@ -157,7 +157,7 @@ async def initialize_file_sync(
         sync_dir = Path(project.path)
 
         try:
-            #await sync_service.sync(sync_dir)
+            await sync_service.sync(sync_dir)
             logger.info(f"Sync completed successfully for project: {project.name}")
         except Exception as e:  # pragma: no cover
             logger.error(f"Error syncing project {project.name}: {e}")
@@ -165,7 +165,7 @@ async def initialize_file_sync(
 
     # Then start the watch service in the background
     logger.info("Starting watch service for all projects")
-    # Create a background task for the watch service
+    # run the watch service
     try:
         await watch_service.run()
         logger.info("Watch service started")
@@ -216,4 +216,3 @@ def ensure_initialization(app_config: BasicMemoryConfig) -> None:
         # Continue execution even if initialization fails
         # The command might still work, or will fail with a
         # more specific error message
-

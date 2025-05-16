@@ -53,7 +53,7 @@ async def test_initialize_app(
     mock_initialize_database.assert_called_once_with(app_config)
     mock_reconcile_projects.assert_called_once_with(app_config)
     mock_migrate_legacy_projects.assert_called_once_with(app_config)
-    mock_initialize_file_sync.assert_called_once_with(app_config)
+    mock_initialize_file_sync.assert_not_called()
     assert result is None
 
 
