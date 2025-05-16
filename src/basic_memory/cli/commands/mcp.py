@@ -36,6 +36,17 @@ def mcp(
     - streamable-http: Recommended for web deployments (default)
     - sse: Server-Sent Events (for compatibility with existing clients)
     """
+    
+    # Check if OAuth is enabled
+    import os
+    auth_enabled = os.getenv("FASTMCP_AUTH_ENABLED", "false").lower() == "true"
+    if auth_enabled:
+        typer.echo("OAuth authentication is ENABLED")
+        typer.echo(f"Issuer URL: {os.getenv('FASTMCP_AUTH_ISSUER_URL', 'http://localhost:8000')}")
+        if os.getenv("FASTMCP_AUTH_REQUIRED_SCOPES"):
+            typer.echo(f"Required scopes: {os.getenv('FASTMCP_AUTH_REQUIRED_SCOPES')}")
+    else:
+        typer.echo("OAuth authentication is DISABLED")
 
     from basic_memory.config import app_config
     from basic_memory.services.initialization import initialize_app, initialize_file_sync
