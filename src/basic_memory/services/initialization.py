@@ -198,16 +198,6 @@ async def initialize_app(
     # migrate legacy project data
     await migrate_legacy_projects(app_config)
 
-    logger.info(f"Sync changes enabled: {app_config.sync_changes}")
-    logger.info(f"Update permalinks on move enabled: {app_config.update_permalinks_on_move}")
-    if not app_config.sync_changes:  # pragma: no cover
-        logger.info("Sync changes disabled. Skipping watch service.")
-        return
-
-    # Initialize file sync services which will handle legacy data migration
-    await initialize_file_sync(app_config)
-    return None
-
 
 def ensure_initialization(app_config: BasicMemoryConfig) -> None:
     """Ensure initialization runs in a synchronous context.
@@ -227,20 +217,3 @@ def ensure_initialization(app_config: BasicMemoryConfig) -> None:
         # The command might still work, or will fail with a
         # more specific error message
 
-
-def ensure_initialize_database(app_config: BasicMemoryConfig) -> None:
-    """Ensure initialization runs in a synchronous context.
-
-    This is a wrapper for the async initialize_database function that can be
-    called from synchronous code like CLI entry points.
-
-    Args:
-        app_config: The Basic Memory project configuration
-    """
-    try:  # pragma: no cover
-        asyncio.run(initialize_database(app_config))
-    except Exception as e:  # pragma: no cover
-        logger.error(f"Error during initialization: {e}")
-        # Continue execution even if initialization fails
-        # The command might still work, or will fail with a
-        # more specific error message

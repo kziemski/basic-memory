@@ -19,7 +19,8 @@ from basic_memory.config import app_config
 from basic_memory.services.initialization import ensure_initialization
 
 if __name__ == "__main__":  # pragma: no cover
-    # Run initialization if we are starting as a module
+    # Run initialization if we are starting as main
+    # if running via a typer command, initialization is already run in cli/app.py
     ensure_initialization(app_config)
 
     # start the app

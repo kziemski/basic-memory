@@ -58,12 +58,12 @@ def app_callback(
 
         app_config = new_config
 
-    # Run migrations for every command unless --version was specified
+    # Run initialization for every command unless --version was specified
     if not version and ctx.invoked_subcommand is not None:
         from basic_memory.config import app_config
-        from basic_memory.services.initialization import ensure_initialize_database
+        from basic_memory.services.initialization import ensure_initialization
 
-        ensure_initialize_database(app_config)
+        ensure_initialization(app_config)
 
 
 # Register sub-command groups

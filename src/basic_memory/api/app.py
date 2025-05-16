@@ -1,5 +1,5 @@
 """FastAPI application for basic-memory knowledge graph API."""
-
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
@@ -20,22 +20,30 @@ from basic_memory.api.routers import (
     prompt_router,
 )
 from basic_memory.config import app_config
-from basic_memory.services.initialization import initialize_app
+from basic_memory.services.initialization import initialize_app, initialize_file_sync
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):  # pragma: no cover
     """Lifecycle manager for the FastAPI app."""
-    # Initialize database and file sync services
+    # Initialize app and database
     logger.info("Starting Basic Memory API")
-    app.state.watch_task = await initialize_app(app_config)
+    await initialize_app(app_config)
+
+    logger.info(f"Sync changes enabled: {app_config.sync_changes}")
+    if app_config.sync_changes:  
+        # start file sync task in background
+        app.state.sync_task = asyncio.create_task(initialize_file_sync(app_config))
+    else:
+        logger.info("Sync changes disabled. Skipping file sync service.")
 
     # proceed with startup
     yield
 
     logger.info("Shutting down Basic Memory API")
-    if app.state.watch_task:
-        app.state.watch_task.cancel()  # pyright: ignore
+    if app.state.sync_task:
+        logger.info("Stopping sync...")
+        app.state.sync_task.cancel()  # pyright: ignore
 
     await db.shutdown_db()
 

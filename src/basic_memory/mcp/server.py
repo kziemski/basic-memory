@@ -1,14 +1,15 @@
-"""Enhanced FastMCP server instance for Basic Memory."""
-
+"""
+Basic Memory FastMCP server.
+"""
 import asyncio
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 from typing import AsyncIterator, Optional
 
-from mcp.server.fastmcp import FastMCP
-from mcp.server.fastmcp.utilities.logging import configure_logging as mcp_configure_logging
-from dataclasses import dataclass
+from fastmcp import FastMCP
+from fastmcp.utilities.logging import configure_logging as mcp_configure_logging
 
-from basic_memory.config import config as project_config
+from basic_memory.config import app_config
 from basic_memory.services.initialization import initialize_app
 
 # mcp console logging
@@ -24,7 +25,7 @@ class AppContext:
 async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:  # pragma: no cover
     """Manage application lifecycle with type-safe context"""
     # Initialize on startup
-    watch_task = await initialize_app(project_config)
+    watch_task = await initialize_app(app_config)
     try:
         yield AppContext(watch_task=watch_task)
     finally:
@@ -34,4 +35,4 @@ async def app_lifespan(server: FastMCP) -> AsyncIterator[AppContext]:  # pragma:
 
 
 # Create the shared server instance
-mcp = FastMCP("Basic Memory", log_level="ERROR", lifespan=app_lifespan)
+mcp = FastMCP("Basic Memory", log_level="DEBUG")
