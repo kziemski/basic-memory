@@ -17,6 +17,7 @@ from basic_memory.mcp.external_auth_provider import (
     create_github_provider,
     create_google_provider,
 )
+from basic_memory.mcp.supabase_auth_provider import SupabaseOAuthProvider
 
 # mcp console logging
 mcp_configure_logging(level="ERROR")
@@ -54,8 +55,29 @@ def create_auth_config() -> tuple[AuthSettings | None, Any | None]:
             required_scopes=os.getenv("FASTMCP_AUTH_REQUIRED_SCOPES", "").split(",") if os.getenv("FASTMCP_AUTH_REQUIRED_SCOPES") else None,
         )
         
-        # Create OAuth provider
-        auth_provider = BasicMemoryOAuthProvider(issuer_url=issuer_url)
+        # Create OAuth provider based on type
+        provider_type = os.getenv("FASTMCP_AUTH_PROVIDER", "basic").lower()
+        
+        if provider_type == "github":
+            auth_provider = create_github_provider()
+        elif provider_type == "google":
+            auth_provider = create_google_provider()
+        elif provider_type == "supabase":
+            supabase_url = os.getenv("SUPABASE_URL")
+            supabase_anon_key = os.getenv("SUPABASE_ANON_KEY")
+            supabase_service_key = os.getenv("SUPABASE_SERVICE_KEY")
+            
+            if not supabase_url or not supabase_anon_key:
+                raise ValueError("SUPABASE_URL and SUPABASE_ANON_KEY must be set for Supabase auth")
+            
+            auth_provider = SupabaseOAuthProvider(
+                supabase_url=supabase_url,
+                supabase_anon_key=supabase_anon_key,
+                supabase_service_key=supabase_service_key,
+                issuer_url=issuer_url,
+            )
+        else:  # default to "basic"
+            auth_provider = BasicMemoryOAuthProvider(issuer_url=issuer_url)
         
         return auth_settings, auth_provider
     

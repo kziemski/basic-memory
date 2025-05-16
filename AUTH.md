@@ -1,147 +1,155 @@
-To test the built-in OAuth flow locally, here's what you need to do:
+# OAuth Quick Start Guide
 
-1. Set Environment Variables
+This guide shows how to quickly test OAuth authentication with Basic Memory MCP server.
 
-  First, create a .env file based on the example:
+## Local Testing with Built-in Provider
 
-  cp .env.oauth.example .env
+1. **Create `.env` file**:
+   ```bash
+   cp .env.oauth.example .env
+   ```
 
-  Then edit .env to enable OAuth:
+2. **Enable OAuth** in `.env`:
+   ```bash
+   FASTMCP_AUTH_ENABLED=true
+   FASTMCP_AUTH_PROVIDER=basic
+   ```
 
-  # Enable OAuth authentication
-  FASTMCP_AUTH_ENABLED=true
+3. **Start the server**:
+   ```bash
+   # Using environment variables
+   basic-memory mcp --transport streamable-http
 
-  # Use the basic (built-in) provider
-  FASTMCP_AUTH_PROVIDER=basic
+   # Or directly
+   FASTMCP_AUTH_ENABLED=true basic-memory mcp --transport streamable-http
+   ```
 
-  # OAuth issuer URL (your MCP server URL)
-  FASTMCP_AUTH_ISSUER_URL=http://localhost:8000
+4. **Register a client**:
+   ```bash
+   basic-memory auth register-client
+   # Save the client_id and client_secret!
+   ```
 
-2. Start the MCP Server with OAuth
+5. **Test the flow**:
+   ```bash
+   basic-memory auth test-auth
+   ```
 
-  Start the server using the streamable-http transport (OAuth works best with HTTP):
+## Production with Supabase
 
-  # Run with OAuth enabled
-  FASTMCP_AUTH_ENABLED=true basic-memory mcp --transport streamable-http
+1. **Create Supabase project** at [supabase.com](https://supabase.com)
 
-  # Or if you have the env vars in .env file:
-  basic-memory mcp --transport streamable-http
+2. **Configure `.env`**:
+   ```bash
+   FASTMCP_AUTH_ENABLED=true
+   FASTMCP_AUTH_PROVIDER=supabase
+   SUPABASE_URL=https://your-project.supabase.co
+   SUPABASE_ANON_KEY=your-anon-key
+   SUPABASE_SERVICE_KEY=your-service-key
+   ```
 
-  You should see:
-  OAuth authentication is ENABLED
-  Issuer URL: http://localhost:8000
+3. **Start the server**:
+   ```bash
+   basic-memory mcp --transport streamable-http
+   ```
 
-3. Register an OAuth Client
+## OAuth Endpoints
 
-  In a new terminal, register a test client:
+When OAuth is enabled, these endpoints are available:
 
-  basic-memory auth register-client
+- `GET /authorize` - OAuth authorization endpoint
+- `POST /token` - Token exchange endpoint
+- `GET /mcp` - Protected MCP endpoint (requires Bearer token)
 
-  This will output something like:
-  Client registered successfully!
-  Client ID: AbCdEfGhIjKlMnOp
-  Client Secret: QrStUvWxYz123456789...
+## Testing with cURL
 
-  Save these credentials!
+1. **Get authorization code**:
+   ```bash
+   curl "http://localhost:8000/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=http://localhost:3000/callback&response_type=code&code_challenge=test"
+   ```
 
-4. Test the OAuth Flow
+2. **Exchange for token**:
+   ```bash
+   curl -X POST http://localhost:8000/token \
+     -H "Content-Type: application/x-www-form-urlencoded" \
+     -d "grant_type=authorization_code&code=AUTH_CODE&client_id=CLIENT_ID&client_secret=CLIENT_SECRET"
+   ```
 
-  Run the built-in test command:
+3. **Use the token**:
+   ```bash
+   curl http://localhost:8000/mcp \
+     -H "Authorization: Bearer ACCESS_TOKEN"
+   ```
 
-  basic-memory auth test-auth
+## Quick Test Script
 
-  This will:
-1. Register a test client
-2. Generate an authorization URL
-3. Exchange the auth code for tokens
-4. Validate the access token
+```python
+import httpx
+import asyncio
+from urllib.parse import urlparse, parse_qs
 
-  You'll see output like:
-  Registered test client: ABC123...
-  Authorization URL: http://localhost:3000/callback?code=XYZ&state=test-state
-  Access token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
-  Refresh token: QrStUvWxYz...
-  Expires in: 3600 seconds
-  Access token validated successfully!
+async def test_oauth():
+    # Your client credentials
+    client_id = "YOUR_CLIENT_ID"
+    client_secret = "YOUR_CLIENT_SECRET"
+    
+    async with httpx.AsyncClient() as client:
+        # 1. Get authorization URL
+        auth_response = await client.get(
+            "http://localhost:8000/authorize",
+            params={
+                "client_id": client_id,
+                "redirect_uri": "http://localhost:3000/callback",
+                "response_type": "code",
+                "code_challenge": "test-challenge",
+                "code_challenge_method": "S256",
+            }
+        )
+        
+        # Extract code from redirect
+        redirect_url = auth_response.headers.get("Location")
+        parsed = urlparse(redirect_url)
+        code = parse_qs(parsed.query)["code"][0]
+        
+        # 2. Exchange code for tokens
+        token_response = await client.post(
+            "http://localhost:8000/token",
+            data={
+                "grant_type": "authorization_code",
+                "code": code,
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "code_verifier": "test-verifier",
+            }
+        )
+        tokens = token_response.json()
+        
+        # 3. Use access token
+        mcp_response = await client.get(
+            "http://localhost:8000/mcp",
+            headers={"Authorization": f"Bearer {tokens['access_token']}"}
+        )
+        
+        print(f"MCP Response: {mcp_response.status_code}")
 
-5. Test with a Real Client
+asyncio.run(test_oauth())
+```
 
-  To test with an actual MCP client, you'll need to:
+## Provider Options
 
-1. Make an authorization request:
-  # Use the client_id from step 3
-  curl "http://localhost:8000/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=http://localhost:3000/callback&response_type=code&code_challenge=test-challenge&code_challenge_method=S256"
+- **basic**: Built-in provider (development only)
+- **supabase**: Supabase Auth (recommended for production)
+- **github**: GitHub OAuth
+- **google**: Google OAuth
 
-2. Exchange the code for tokens:
-  # Use the code from the redirect URL
-  curl -X POST http://localhost:8000/token \
-    -H "Content-Type: application/x-www-form-urlencoded" \
-    -d "grant_type=authorization_code&code=YOUR_AUTH_CODE&client_id=YOUR_CLIENT_ID&client_secret=YOUR_CLIENT_SECRET&code_verifier=test-verifier"
+## Debug Tips
 
-3. Use the access token to call MCP endpoints:
-curl http://localhost:8000/mcp \
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+- Check server logs for OAuth messages
+- Basic provider stores in memory (lost on restart)
+- Enable debug logging: `export FASTMCP_LOG_LEVEL=DEBUG`
 
-6. Quick Test Script
+## Documentation
 
-  Here's a simple Python script to test the flow:
-
-  import httpx
-  import asyncio
-  from urllib.parse import urlparse, parse_qs
-
-  async def test_oauth():
-      client = httpx.AsyncClient()
-
-      # Your client credentials
-      client_id = "YOUR_CLIENT_ID"
-      client_secret = "YOUR_CLIENT_SECRET"
-
-      # 1. Get authorization URL
-      auth_response = await client.get(
-          "http://localhost:8000/authorize",
-          params={
-              "client_id": client_id,
-              "redirect_uri": "http://localhost:3000/callback",
-              "response_type": "code",
-              "code_challenge": "test-challenge",
-              "code_challenge_method": "S256",
-          }
-      )
-
-      # Extract code from redirect
-      redirect_url = auth_response.headers.get("Location")
-      parsed = urlparse(redirect_url)
-      code = parse_qs(parsed.query)["code"][0]
-
-      # 2. Exchange code for tokens
-      token_response = await client.post(
-          "http://localhost:8000/token",
-          data={
-              "grant_type": "authorization_code",
-              "code": code,
-              "client_id": client_id,
-              "client_secret": client_secret,
-              "code_verifier": "test-verifier",
-          }
-      )
-      tokens = token_response.json()
-
-      # 3. Use access token
-      mcp_response = await client.get(
-          "http://localhost:8000/mcp",
-          headers={"Authorization": f"Bearer {tokens['access_token']}"}
-      )
-
-      print(f"MCP Response: {mcp_response.status_code}")
-
-  asyncio.run(test_oauth())
-
-7. Debug Tips
-
-- Check the server logs for OAuth-related messages
-- The basic provider stores everything in memory, so clients/tokens are lost on restart
-- You can modify the log level for more details:
-FASTMCP_AUTH_ENABLED=true basic-memory mcp --transport streamable-http
-
-  That's it! The built-in OAuth provider is perfect for local development and testing. For production, you'd want to use an external provider (GitHub/Google) or implement persistent storage for the basic provider.
+- [OAuth Authentication Guide](docs/OAuth%20Authentication.md)
+- [Supabase OAuth Setup](docs/Supabase%20OAuth%20Setup.md)
+- [MCP Authorization Spec](https://modelcontextprotocol.io/specification/2025-03-26/basic/authorization)
