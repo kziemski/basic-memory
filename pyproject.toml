@@ -34,6 +34,7 @@ dependencies = [
     "pybars3>=0.9.7",
     "fastmcp>=2.3.4",
     "pyjwt>=2.10.1",
+    "python-dotenv>=1.1.0",
 ]
 
 

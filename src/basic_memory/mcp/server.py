@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import AsyncIterator, Optional, Any
 
+from dotenv import load_dotenv
 from fastmcp import FastMCP
 from fastmcp.utilities.logging import configure_logging as mcp_configure_logging
 from mcp.server.auth.settings import AuthSettings
@@ -22,6 +23,7 @@ from basic_memory.mcp.supabase_auth_provider import SupabaseOAuthProvider
 # mcp console logging
 mcp_configure_logging(level="ERROR")
 
+load_dotenv()
 
 @dataclass
 class AppContext:
@@ -51,7 +53,7 @@ def create_auth_config() -> tuple[AuthSettings | None, Any | None]:
         issuer_url = os.getenv("FASTMCP_AUTH_ISSUER_URL", "http://localhost:8000")
         auth_settings = AuthSettings(
             issuer_url=issuer_url,
-            service_documentation_url=os.getenv("FASTMCP_AUTH_DOCS_URL") or "",
+            service_documentation_url=os.getenv("FASTMCP_AUTH_DOCS_URL") or "http://localhost:8000/docs/oauth",
             required_scopes=os.getenv("FASTMCP_AUTH_REQUIRED_SCOPES", "").split(",") if os.getenv("FASTMCP_AUTH_REQUIRED_SCOPES") else None,
         )
         
