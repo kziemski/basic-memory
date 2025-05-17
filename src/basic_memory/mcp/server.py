@@ -51,7 +51,7 @@ def create_auth_config() -> tuple[AuthSettings | None, Any | None]:
         issuer_url = os.getenv("FASTMCP_AUTH_ISSUER_URL", "http://localhost:8000")
         auth_settings = AuthSettings(
             issuer_url=issuer_url,
-            service_documentation_url=os.getenv("FASTMCP_AUTH_DOCS_URL"),
+            service_documentation_url=os.getenv("FASTMCP_AUTH_DOCS_URL") or "",
             required_scopes=os.getenv("FASTMCP_AUTH_REQUIRED_SCOPES", "").split(",") if os.getenv("FASTMCP_AUTH_REQUIRED_SCOPES") else None,
         )
         

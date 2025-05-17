@@ -1,6 +1,6 @@
 # OAuth Quick Start Guide
 
-This guide shows how to quickly test OAuth authentication with Basic Memory MCP server.
+This guide shows how to test OAuth authentication with Basic Memory MCP server, including how to connect from Claude.ai.
 
 ## Local Testing with Built-in Provider
 
@@ -135,6 +135,38 @@ async def test_oauth():
 asyncio.run(test_oauth())
 ```
 
+## Connecting from Claude.ai
+
+To connect your Basic Memory MCP server to Claude.ai:
+
+1. **Deploy your MCP server** with OAuth enabled:
+   ```bash
+   # Must use streamable-http transport
+   FASTMCP_AUTH_ENABLED=true basic-memory mcp --transport streamable-http --host 0.0.0.0
+   ```
+
+2. **Make server accessible** (for testing):
+   - Use a tunneling service like ngrok: `ngrok http 8000`
+   - Or deploy to a cloud provider
+   - Note the public URL (e.g., `https://xyz.ngrok.io`)
+
+3. **In Claude.ai**:
+   - Go to **Settings** → **Integrations**
+   - Click **Add More**
+   - Enter your MCP server URL: `https://your-server.com/mcp`
+   - Click **Connect**
+
+4. **OAuth Flow**:
+   - Claude will redirect you to your MCP server's authorization page
+   - Login/authorize (depends on your provider)
+   - You'll be redirected back to Claude
+   - Claude now has access to your MCP server!
+
+5. **Use in conversation**:
+   - Click the tools icon (second from bottom left)
+   - Select your Basic Memory server
+   - Use commands like "write a note" or "search my notes"
+
 ## Provider Options
 
 - **basic**: Built-in provider (development only)
@@ -153,3 +185,61 @@ asyncio.run(test_oauth())
 - [OAuth Authentication Guide](docs/OAuth%20Authentication.md)
 - [Supabase OAuth Setup](docs/Supabase%20OAuth%20Setup.md)
 - [MCP Authorization Spec](https://modelcontextprotocol.io/specification/2025-03-26/basic/authorization)
+
+
+## CLAUDE OAUTH
+
+⏺ Summary
+
+  Yes! Basic Memory now supports OAuth authentication that works with Claude.ai, just like claude-code. Here's what I've implemented:
+
+  1. OAuth Flow for Claude.ai
+
+  - Claude initiates the OAuth flow when connecting to your MCP server
+  - The server handles authorization, token exchange, and validation
+  - Full compliance with MCP OAuth 2.1 specification
+
+  2. Key Components Added
+
+  - OAuth authorization endpoints (/auth/authorize, /auth/token)
+  - OAuth metadata discovery (/.well-known/oauth-authorization-server)
+  - Support for PKCE (required by Claude)
+  - Token refresh and revocation
+
+  3. How to Connect from Claude.ai
+
+  For testing locally:
+  # 1. Enable OAuth
+  export FASTMCP_AUTH_ENABLED=true
+
+  # 2. Start server
+  basic-memory mcp --transport streamable-http --host 0.0.0.0
+
+  # 3. Make it accessible (use ngrok for testing)
+  ngrok http 8000
+
+  # 4. In Claude.ai:
+  # Settings → Integrations → Add More
+  # Enter: https://your-ngrok-url.ngrok.io/mcp
+  # Click Connect → Authorize
+
+  4. Production Setup
+
+  - Use Supabase provider for production
+  - Deploy to HTTPS (required for OAuth)
+  - Claude.ai Enterprise can add for entire organization
+
+  5. Security Features
+
+  - Scoped access (read, write, admin)
+  - Short-lived tokens
+  - Secure token storage
+  - HTTPS required
+
+  The implementation follows the same pattern as claude-code, where:
+  1. User adds the MCP server URL in Claude settings
+  2. Claude redirects to your authorization endpoint
+  3. User logs in and authorizes
+  4. Claude receives tokens and can access your MCP tools
+
+  This enables persistent memory and knowledge management directly within Claude.ai conversations!

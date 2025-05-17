@@ -19,6 +19,7 @@ from basic_memory.api.routers import (
     search,
     prompt_router,
 )
+from basic_memory.api.routers import auth_router
 from basic_memory.config import app_config
 from basic_memory.services.initialization import initialize_app, initialize_file_sync
 
@@ -67,6 +68,11 @@ app.include_router(project.router, prefix="/{project}")
 app.include_router(directory_router.router, prefix="/{project}")
 app.include_router(prompt_router.router, prefix="/{project}")
 app.include_router(importer_router.router, prefix="/{project}")
+
+# Auth router (no project prefix)
+import os
+if os.getenv("FASTMCP_AUTH_ENABLED", "false").lower() == "true":
+    app.include_router(auth_router.router)
 
 
 @app.exception_handler(Exception)

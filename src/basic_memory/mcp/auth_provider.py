@@ -166,7 +166,7 @@ class BasicMemoryOAuthProvider(
         
         return OAuthToken(
             access_token=access_token,
-            token_type="Bearer",
+            token_type="bearer",
             expires_in=3600,  # 1 hour
             refresh_token=refresh_token,
             scope=" ".join(authorization_code.scopes) if authorization_code.scopes else None,
@@ -220,7 +220,7 @@ class BasicMemoryOAuthProvider(
         
         return OAuthToken(
             access_token=new_access_token,
-            token_type="Bearer",
+            token_type="bearer",
             expires_in=3600,  # 1 hour
             refresh_token=new_refresh_token,
             scope=" ".join(token_scopes) if token_scopes else None,

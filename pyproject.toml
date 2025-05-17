@@ -33,6 +33,7 @@ dependencies = [
     "python-liquid>=2.0.1",
     "pybars3>=0.9.7",
     "fastmcp>=2.3.4",
+    "pyjwt>=2.10.1",
 ]
 
 
