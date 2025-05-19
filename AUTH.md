@@ -2,6 +2,43 @@
 
 This guide shows how to test OAuth authentication with Basic Memory MCP server, including how to connect from Claude.ai.
 
+## MCP Inspector Testing
+
+To test with MCP Inspector when OAuth is enabled:
+
+1. **Start the server with OAuth**:
+   ```bash
+   FASTMCP_AUTH_ENABLED=true basic-memory mcp --transport streamable-http
+   ```
+
+2. **Register a client** (in another terminal):
+   ```bash
+   basic-memory auth register-client --client-id=test-client
+   # Save the client_secret that's generated!
+   ```
+
+3. **Get an access token**:
+   ```bash
+   # Test the flow to get a token
+   basic-memory auth test-auth
+   # Look for "Access token: ..." in the output
+   ```
+
+4. **Use token in MCP Inspector**:
+   - Header Name: `Authorization`
+   - Bearer Token: `<paste the access token from step 3>`
+
+   Or manually get a token:
+   ```bash
+   # Get authorization code
+   curl "http://localhost:8000/auth/authorize?client_id=test-client&redirect_uri=http://localhost:3000/callback&response_type=code&code_challenge=test"
+   
+   # Exchange for token (use code from redirect URL)
+   curl -X POST http://localhost:8000/auth/token \
+     -H "Content-Type: application/x-www-form-urlencoded" \
+     -d "grant_type=authorization_code&code=YOUR_CODE&client_id=test-client&client_secret=YOUR_SECRET&code_verifier=test"
+   ```
+
 ## Local Testing with Built-in Provider
 
 1. **Create `.env` file**:
@@ -21,7 +58,7 @@ This guide shows how to test OAuth authentication with Basic Memory MCP server, 
    basic-memory mcp --transport streamable-http
 
    # Or directly
-   FASTMCP_AUTH_ENABLED=true basic-memory mcp --transport streamable-http
+   
    ```
 
 4. **Register a client**:
@@ -57,15 +94,47 @@ This guide shows how to test OAuth authentication with Basic Memory MCP server, 
 
 When OAuth is enabled, these endpoints are available:
 
-- `GET /authorize` - OAuth authorization endpoint
-- `POST /token` - Token exchange endpoint
+- `GET /auth/authorize` - OAuth authorization endpoint
+- `POST /auth/token` - Token exchange endpoint
 - `GET /mcp` - Protected MCP endpoint (requires Bearer token)
+
+## Testing with MCP Inspector
+
+**Note**: The OAuth2 flow typically requires browser interaction. With MCP Inspector, you can use bearer token authentication directly.
+
+### Bearer Token Approach
+
+1. Run the test-auth command to get tokens:
+   ```bash
+   basic-memory auth test-auth
+   ```
+   This will output an access token that you can copy.
+
+2. In MCP Inspector:
+   - Server URL: `http://localhost:8000/mcp`
+   - Transport: `streamable-http`
+   - Add custom headers:
+     ```
+     Authorization: Bearer YOUR_ACCESS_TOKEN
+     ```
+
+### Full OAuth Flow Testing
+
+If you want to test the full OAuth flow:
+
+1. Register a client:
+   ```bash
+   basic-memory auth register-client
+   ```
+   Copy the returned `client_id` and `client_secret`.
+
+2. Follow the OAuth flow described below with the correct callback URL (`http://localhost:8000/auth/callback`).
 
 ## Testing with cURL
 
 1. **Get authorization code**:
    ```bash
-   curl "http://localhost:8000/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=http://localhost:3000/callback&response_type=code&code_challenge=test"
+   curl "http://localhost:8000/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=http://localhost:8000/auth/callback&response_type=code&code_challenge=test"
    ```
 
 2. **Exchange for token**:
@@ -99,7 +168,7 @@ async def test_oauth():
             "http://localhost:8000/authorize",
             params={
                 "client_id": client_id,
-                "redirect_uri": "http://localhost:3000/callback",
+                "redirect_uri": "http://localhost:8000/auth/callback",
                 "response_type": "code",
                 "code_challenge": "test-challenge",
                 "code_challenge_method": "S256",

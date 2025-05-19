@@ -22,10 +22,13 @@ def register_client(
     # Create provider instance
     provider = BasicMemoryOAuthProvider(issuer_url=issuer_url)
     
-    # Create client info
+    # Create client info with required redirect_uris
     client_info = OAuthClientInformationFull(
         client_id=client_id,
         client_secret=client_secret,
+        redirect_uris=["http://localhost:8000/auth/callback"],  # Default redirect URI
+        client_name="Basic Memory OAuth Client",
+        grant_types=["authorization_code", "refresh_token"],
     )
     
     # Register the client
@@ -57,6 +60,9 @@ def test_auth(
         client_info = OAuthClientInformationFull(
             client_id=secrets.token_urlsafe(16),
             client_secret=secrets.token_urlsafe(32),
+            redirect_uris=["http://localhost:8000/auth/callback"],
+            client_name="Test OAuth Client",
+            grant_types=["authorization_code", "refresh_token"],
         )
         await provider.register_client(client_info)
         typer.echo(f"Registered test client: {client_info.client_id}")
@@ -72,7 +78,7 @@ def test_auth(
             state="test-state",
             scopes=["read", "write"],
             code_challenge="test-challenge",
-            redirect_uri=AnyHttpUrl("http://localhost:3000/callback"),
+            redirect_uri=AnyHttpUrl("http://localhost:8000/auth/callback"),
             redirect_uri_provided_explicitly=True,
         )
         
@@ -98,8 +104,8 @@ def test_auth(
             
         # Exchange for tokens
         token = await provider.exchange_authorization_code(client, code_obj)
-        typer.echo(f"Access token: {token.access_token[:20]}...")
-        typer.echo(f"Refresh token: {token.refresh_token[:20]}...")
+        typer.echo(f"Access token: {token.access_token}")
+        typer.echo(f"Refresh token: {token.refresh_token}")
         typer.echo(f"Expires in: {token.expires_in} seconds")
         
         # Validate access token  

@@ -1,7 +1,6 @@
 """OAuth authentication provider for Basic Memory MCP server."""
 
 import secrets
-from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Dict, Optional, Any
 
@@ -21,19 +20,16 @@ from mcp.shared.auth import OAuthClientInformationFull, OAuthToken
 from loguru import logger
 
 
-@dataclass
 class BasicMemoryAuthorizationCode(AuthorizationCode):
     """Extended authorization code with additional metadata."""
     issuer_state: Optional[str] = None
 
 
-@dataclass  
 class BasicMemoryRefreshToken(RefreshToken):
     """Extended refresh token with additional metadata."""
     pass
 
 
-@dataclass
 class BasicMemoryAccessToken(AccessToken):
     """Extended access token with additional metadata."""
     pass
