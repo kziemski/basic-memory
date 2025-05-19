@@ -2,7 +2,6 @@
 
 import asyncio
 import typer
-import uvicorn
 
 from basic_memory.cli.app import app
 
@@ -16,11 +15,10 @@ import basic_memory.mcp.tools  # noqa: F401  # pragma: no cover
 import basic_memory.mcp.prompts  # noqa: F401  # pragma: no cover
 from loguru import logger
 
+
 @app.command()
 def mcp(
-    transport: str = typer.Option(
-        "stdio", help="Transport type: stdio, streamable-http, or sse"
-    ),
+    transport: str = typer.Option("stdio", help="Transport type: stdio, streamable-http, or sse"),
     host: str = typer.Option(
         "0.0.0.0", help="Host for HTTP transports (use 0.0.0.0 to allow external connections)"
     ),
@@ -35,9 +33,10 @@ def mcp(
     - streamable-http: Recommended for web deployments (default)
     - sse: Server-Sent Events (for compatibility with existing clients)
     """
-    
+
     # Check if OAuth is enabled
     import os
+
     auth_enabled = os.getenv("FASTMCP_AUTH_ENABLED", "false").lower() == "true"
     if auth_enabled:
         logger.info("OAuth authentication is ENABLED")
@@ -52,70 +51,39 @@ def mcp(
 
     # Start the MCP server with the specified transport
 
+    # Use unified thread-based sync approach for both transports
+    import threading
 
-    if transport == "streamable-http":
-        # For HTTP transports, we can use the ASGI app approach to control the event loop
-        async def main():
-            """Run HTTP transport with file sync support."""
+    def run_file_sync():
+        """Run file sync in a separate thread with its own event loop."""
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(initialize_file_sync(app_config))
+        except Exception as e:
+            logger.error(f"File sync error: {e}", err=True)
+        finally:
+            loop.close()
 
-            sync_task = None
-            logger.info(f"Sync changes enabled: {app_config.sync_changes}")
-            if app_config.sync_changes:
-                # Start file sync task in background
-                sync_task = asyncio.create_task(initialize_file_sync(app_config))
+    logger.info(f"Sync changes enabled: {app_config.sync_changes}")
+    if app_config.sync_changes:
+        # Start the sync thread
+        sync_thread = threading.Thread(target=run_file_sync, daemon=True)
+        sync_thread.start()
+        logger.info("Started file sync in background")
 
-            # Create ASGI app
-            app = mcp_server.http_app(path=path, transport="streamable-http")
+    # Now run the MCP server (blocks)
+    logger.info(f"Starting MCP server with {transport.upper()} transport")
 
-            logger.info(f"Starting MCP server with {transport.upper()} transport on http://{host}:{port}{path}")
-
-            # Run with uvicorn
-            config = uvicorn.Config(
-                app=app,
-                host=host,
-                port=port,
-                log_level="info",
-            )
-            server = uvicorn.Server(config)
-
-            try:
-                await server.serve()
-            finally:
-                # Cancel sync task on shutdown
-                if sync_task:
-                    sync_task.cancel()
-                    try:
-                        await sync_task
-                    except asyncio.CancelledError:
-                        pass
-
-        # Run the async main function
-        asyncio.run(main())
-    
-    else:
-        logger.info("Starting MCP server with stdio transport")
-        
-        # For stdio, we'll run the file sync in a separate thread since the
-        # MCP server will create its own event loop
-        import threading
-        
-        def run_file_sync():
-            """Run file sync in a separate thread with its own event loop."""
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                loop.run_until_complete(initialize_file_sync(app_config))
-            except Exception as e:
-                logger.error(f"File sync error: {e}", err=True)
-            finally:
-                loop.close()
-
-        logger.info(f"Sync changes enabled: {app_config.sync_changes}")
-        if app_config.sync_changes:
-            # Start the sync thread
-            sync_thread = threading.Thread(target=run_file_sync, daemon=True)
-            sync_thread.start()
-            logger.info("Started file sync in background")
-        
-        # Now run the MCP server (blocks)
-        mcp_server.run(transport="stdio")
+    if transport == "stdio":
+        mcp_server.run(
+            transport=transport,
+            host=host,
+        )
+    elif transport == "streamable-http" or transport == "sse":
+        mcp_server.run(
+            transport=transport,
+            host=host,
+            port=port,
+            path=path,
+        )
