@@ -50,7 +50,9 @@ class BasicMemoryOAuthProvider(
     
     def __init__(self, issuer_url: str = "http://localhost:8000", secret_key: Optional[str] = None):
         self.issuer_url = issuer_url
-        self.secret_key = secret_key or secrets.token_urlsafe(32)
+        # Use environment variable for secret key if available, otherwise generate
+        import os
+        self.secret_key = secret_key or os.getenv("FASTMCP_AUTH_SECRET_KEY") or secrets.token_urlsafe(32)
         
         # In-memory storage - in production, use a proper database
         self.clients: Dict[str, OAuthClientInformationFull] = {}
@@ -224,25 +226,38 @@ class BasicMemoryOAuthProvider(
     
     async def load_access_token(self, token: str) -> Optional[BasicMemoryAccessToken]:
         """Load and validate an access token."""
+        logger.debug(f"Loading access token, checking in-memory store first")
         access_token = self.access_tokens.get(token)
         
         if access_token:
             # Check if expired
             if access_token.expires_at and datetime.utcnow().timestamp() > access_token.expires_at:
+                logger.debug("Token found in memory but expired, removing")
                 del self.access_tokens[token]
                 return None
+            logger.debug("Token found in memory and valid")
             return access_token
             
         # Try to decode as JWT
+        logger.debug(f"Token not in memory, attempting JWT decode with secret key")
         try:
-            payload = jwt.decode(token, self.secret_key, algorithms=["HS256"])
+            # Decode with audience verification - PyJWT expects the audience to match
+            payload = jwt.decode(
+                token, 
+                self.secret_key, 
+                algorithms=["HS256"],
+                audience="basic-memory",  # Expecting this audience
+                issuer=self.issuer_url    # And this issuer
+            )
+            logger.debug(f"JWT decoded successfully: {payload}")
             return BasicMemoryAccessToken(
                 token=token,
                 client_id=payload.get("sub", ""),
                 scopes=payload.get("scopes", []),
                 expires_at=payload.get("exp"),
             )
-        except jwt.InvalidTokenError:
+        except jwt.InvalidTokenError as e:
+            logger.error(f"JWT decode failed: {e}")
             return None
     
     async def revoke_token(

@@ -51,10 +51,11 @@ def create_auth_config() -> tuple[AuthSettings | None, Any | None]:
     if os.getenv("FASTMCP_AUTH_ENABLED", "false").lower() == "true":
         # Configure OAuth settings
         issuer_url = os.getenv("FASTMCP_AUTH_ISSUER_URL", "http://localhost:8000")
+        required_scopes = os.getenv("FASTMCP_AUTH_REQUIRED_SCOPES", "read,write")
         auth_settings = AuthSettings(
             issuer_url=issuer_url,
             service_documentation_url=os.getenv("FASTMCP_AUTH_DOCS_URL") or "http://localhost:8000/docs/oauth",
-            required_scopes=os.getenv("FASTMCP_AUTH_REQUIRED_SCOPES", "").split(",") if os.getenv("FASTMCP_AUTH_REQUIRED_SCOPES") else None,
+            required_scopes=required_scopes.split(",") if required_scopes else ["read", "write"],
         )
         
         # Create OAuth provider based on type

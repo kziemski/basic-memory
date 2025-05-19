@@ -26,7 +26,7 @@ def register_client(
     client_info = OAuthClientInformationFull(
         client_id=client_id,
         client_secret=client_secret,
-        redirect_uris=["http://localhost:8000/auth/callback"],  # Default redirect URI
+        redirect_uris=["http://localhost:8000/callback"],  # Default redirect URI
         client_name="Basic Memory OAuth Client",
         grant_types=["authorization_code", "refresh_token"],
     )
@@ -45,7 +45,11 @@ def register_client(
 def test_auth(
     issuer_url: str = typer.Option("http://localhost:8000", help="OAuth issuer URL"),
 ):
-    """Test OAuth authentication flow."""
+    """Test OAuth authentication flow.
+    
+    IMPORTANT: Use the same FASTMCP_AUTH_SECRET_KEY environment variable
+    as your MCP server for tokens to validate correctly.
+    """
     
     import asyncio
     import secrets
@@ -53,14 +57,14 @@ def test_auth(
     from pydantic import AnyHttpUrl
     
     async def test_flow():
-        # Create provider
+        # Create provider with same secret key as server
         provider = BasicMemoryOAuthProvider(issuer_url=issuer_url)
         
         # Register a test client
         client_info = OAuthClientInformationFull(
             client_id=secrets.token_urlsafe(16),
             client_secret=secrets.token_urlsafe(32),
-            redirect_uris=["http://localhost:8000/auth/callback"],
+            redirect_uris=["http://localhost:8000/callback"],
             client_name="Test OAuth Client",
             grant_types=["authorization_code", "refresh_token"],
         )
@@ -78,7 +82,7 @@ def test_auth(
             state="test-state",
             scopes=["read", "write"],
             code_challenge="test-challenge",
-            redirect_uri=AnyHttpUrl("http://localhost:8000/auth/callback"),
+            redirect_uri=AnyHttpUrl("http://localhost:8000/callback"),
             redirect_uri_provided_explicitly=True,
         )
         
