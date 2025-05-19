@@ -192,9 +192,9 @@ class Repository[T: Base]:
         entity = result.scalars().one_or_none()
 
         if entity:
-            logger.debug(f"Found {self.Model.__name__}: {getattr(entity, 'id', None)}")
+            logger.trace(f"Found {self.Model.__name__}: {getattr(entity, 'id', None)}")
         else:
-            logger.debug(f"No {self.Model.__name__} found")
+            logger.trace(f"No {self.Model.__name__} found")
         return entity
 
     async def create(self, data: dict) -> T:
@@ -358,7 +358,7 @@ class Repository[T: Base]:
         """Execute a query asynchronously."""
 
         query = query.options(*self.get_load_options()) if use_query_options else query
-        logger.debug(f"Executing query: {query}, params: {params}")
+        logger.trace(f"Executing query: {query}, params: {params}")
         async with db.scoped_session(self.session_maker) as session:
             result = await session.execute(query, params)
             return result

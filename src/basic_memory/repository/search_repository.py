@@ -291,9 +291,9 @@ class SearchRepository:
             for row in rows
         ]
 
-        logger.debug(f"Found {len(results)} search results")
+        logger.trace(f"Found {len(results)} search results")
         for r in results:
-            logger.debug(
+            logger.trace(
                 f"Search result: project_id: {r.project_id} type:{r.type} title: {r.title} permalink: {r.permalink} score: {r.score}"
             )
 

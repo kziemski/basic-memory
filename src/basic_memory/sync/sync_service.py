@@ -219,7 +219,7 @@ class SyncService:
             return entity, checksum
 
         except Exception as e:  # pragma: no cover
-            logger.exception("Failed to sync file", path=path, error=str(e))
+            logger.error(f"Failed to sync file: path={path}, error={str(e)}")
             return None, None
 
     async def sync_markdown_file(self, path: str, new: bool = True) -> Tuple[Optional[Entity], str]:
@@ -427,7 +427,7 @@ class SyncService:
         logger.info("Resolving forward references", count=len(unresolved_relations))
 
         for relation in unresolved_relations:
-            logger.debug(
+            logger.trace(
                 "Attempting to resolve relation "
                 f"relation_id={relation.id} "
                 f"from_id={relation.from_id} "
@@ -495,7 +495,7 @@ class SyncService:
                 result.files[rel_path] = checksum
                 result.checksums[checksum] = rel_path
 
-                logger.debug(f"Found file, path={rel_path}, checksum={checksum}")
+                logger.trace(f"Found file, path={rel_path}, checksum={checksum}")
 
         duration_ms = int((time.time() - start_time) * 1000)
         logger.debug(

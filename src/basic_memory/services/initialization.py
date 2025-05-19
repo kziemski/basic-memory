@@ -86,6 +86,7 @@ async def migrate_legacy_projects(app_config: BasicMemoryConfig):
         await migrate_legacy_project_data(project, legacy_dir)
     logger.info("Legacy projects successfully migrated")
 
+
 async def migrate_legacy_project_data(project: Project, legacy_dir: Path) -> bool:
     """Check if project has legacy .basic-memory dir and migrate if needed.
 
@@ -189,6 +190,7 @@ async def initialize_app(
     Args:
         app_config: The Basic Memory project configuration
     """
+    logger.info("Initializing app...")
     # Initialize database first
     await initialize_database(app_config)
 

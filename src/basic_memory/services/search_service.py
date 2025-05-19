@@ -66,7 +66,7 @@ class SearchService:
             logger.debug("no criteria passed to query")
             return []
 
-        logger.debug(f"Searching with query: {query}")
+        logger.trace(f"Searching with query: {query}")
 
         after_date = (
             (
