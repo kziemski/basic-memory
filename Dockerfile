@@ -10,7 +10,8 @@ COPY . .
 RUN pip install --upgrade pip \
 && pip install . --no-cache-dir --ignore-installed
 
-# Expose port if necessary (e.g., uv might use a port, but MCP over stdio so not needed here)
+# Expose port for HTTP transport
+EXPOSE 8080
 
-# Use the basic-memory entrypoint to run the MCP server
-CMD ["basic-memory", "mcp"]
+# Use HTTP transport for cloud deployment on Fly.io's expected port
+CMD ["basic-memory", "mcp", "--transport", "streamable-http", "--host", "0.0.0.0", "--port", "8080"]

@@ -45,8 +45,15 @@ class BasicMemoryOAuthProvider(
     to integrate with external OAuth providers or use persistent storage.
     """
 
-    def __init__(self, issuer_url: str = "http://localhost:8000", secret_key: Optional[str] = None):
+    def __init__(self, issuer_url: str = "http://localhost:8000", secret_key: Optional[str] = None, required_scopes: Optional[list[str]] = None):
         self.issuer_url = issuer_url
+        self.required_scopes = required_scopes or ["read", "write"]
+        
+        # Required FastMCP OAuth provider attributes
+        self.service_documentation_url = f"{issuer_url}/docs/oauth"
+        self.client_registration_options = None
+        self.revocation_options = None
+        
         # Use environment variable for secret key if available, otherwise generate
         import os
 

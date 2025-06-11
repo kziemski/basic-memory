@@ -1,0 +1,81 @@
+# flyctl launch added from .gitignore
+**/*.py[cod]
+**/__pycache__
+**/.pytest_cache
+**/.coverage
+**/htmlcov
+
+# Distribution / packaging
+**/.Python
+**/build
+**/develop-eggs
+**/dist
+**/downloads
+**/eggs
+**/.eggs
+**/lib
+**/lib64
+**/parts
+**/sdist
+**/var
+**/wheels
+**/*.egg-info
+**/.installed.cfg
+**/*.egg
+
+# Installer artifacts
+**/installer/build
+**/installer/dist
+**/rw.*.dmg  # Temporary disk images
+
+# Virtual environments
+**/.env
+**/.venv
+**/env
+**/venv
+**/ENV
+
+# IDE
+**/.idea
+**/.vscode
+**/*.swp
+**/*.swo
+
+# macOS
+**/.DS_Store
+**/.coverage.*
+
+# obsidian docs:
+docs/.obsidian
+examples/.obsidian
+examples/.basic-memory
+
+
+# claude action
+**/claude-output
+**/**/.claude/settings.local.json
+
+# flyctl launch added from .idea/.gitignore
+# Default ignored files
+.idea/shelf
+.idea/workspace.xml
+# Editor-based HTTP Client requests
+.idea/httpRequests
+# Datasource local storage ignored files
+.idea/dataSources
+.idea/dataSources.local.xml
+
+# flyctl launch added from .pytest_cache/.gitignore
+# Created by pytest automatically.
+.pytest_cache/**/*
+
+# flyctl launch added from .ruff_cache/.gitignore
+# Automatically created by ruff.
+.ruff_cache/**/*
+
+# flyctl launch added from .venv/.gitignore
+.venv/**/*
+
+# flyctl launch added from dist/.gitignore
+dist/**/*
+fly.toml

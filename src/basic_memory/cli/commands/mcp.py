@@ -29,7 +29,7 @@ def mcp(
 
     This command starts an MCP server using one of three transport options:
 
-    - stdio: Standard I/O (good for local usage)
+    - stdio: Standard I/O (good for local usage)are
     - streamable-http: Recommended for web deployments (default)
     - sse: Server-Sent Events (for compatibility with existing clients)
     """

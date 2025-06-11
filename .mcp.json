@@ -9,6 +9,15 @@
         "src/basic_memory/cli/main.py",
         "mcp"
       ]
+    },
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--access-token",
+        "sbp_031cfee7536f214174024fe463af9345d45db5f3"
+      ]
     }
   }
 }
