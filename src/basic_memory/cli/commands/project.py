@@ -99,6 +99,36 @@ def add_project(
     console.print(f"  basic-memory project default {name}")
 
 
+@project_app.command("create")
+def create_project(
+    name: str = typer.Argument(..., help="Name of the project"),
+    path: str = typer.Argument(..., help="Path to the project directory"),
+    set_default: bool = typer.Option(False, "--default", help="Set as default project"),
+) -> None:
+    """Create a new project."""
+    # Resolve to absolute path
+    resolved_path = os.path.abspath(os.path.expanduser(path))
+
+    try:
+        project_url = config.project_url
+        data = {"name": name, "path": resolved_path, "set_default": set_default}
+
+        response = asyncio.run(call_post(client, f"{project_url}/project/projects", json=data))
+        result = ProjectStatusResponse.model_validate(response.json())
+
+        console.print(f"[green]{result.message}[/green]")
+    except Exception as e:
+        console.print(f"[red]Error creating project: {str(e)}[/red]")
+        console.print("[yellow]Note: Make sure the Basic Memory server is running.[/yellow]")
+        raise typer.Exit(1)
+
+    # Display usage hint
+    console.print("\nTo use this project:")
+    console.print(f"  basic-memory --project={name} <command>")
+    console.print("  # or")
+    console.print(f"  basic-memory project default {name}")
+
+
 @project_app.command("remove")
 def remove_project(
     name: str = typer.Argument(..., help="Name of the project to remove"),

@@ -48,6 +48,26 @@ def test_project_add_command(mock_run, cli_env):
 
 
 @patch("basic_memory.cli.commands.project.asyncio.run")
+def test_project_create_command(mock_run, cli_env):
+    """Test the 'project create' command with mocked API."""
+    # Mock the API response
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "message": "Project 'test-project' added successfully",
+        "status": "success",
+        "default": False,
+    }
+    mock_run.return_value = mock_response
+
+    runner = CliRunner()
+    result = runner.invoke(cli_app, ["project", "create", "test-project", "/path/to/project"])
+
+    # Just verify it runs without exception
+    assert result.exit_code == 0
+
+
+@patch("basic_memory.cli.commands.project.asyncio.run")
 def test_project_remove_command(mock_run, cli_env):
     """Test the 'project remove' command with mocked API."""
     # Mock the API response
@@ -128,6 +148,7 @@ def test_project_failure_exits_with_error(mock_run, cli_env):
     # Test various commands for proper error handling
     list_result = runner.invoke(cli_app, ["project", "list"])
     add_result = runner.invoke(cli_app, ["project", "add", "test-project", "/path/to/project"])
+    create_result = runner.invoke(cli_app, ["project", "create", "test-project", "/path/to/project"])
     remove_result = runner.invoke(cli_app, ["project", "remove", "test-project"])
     default_result = runner.invoke(cli_app, ["project", "default", "test-project"])
 
@@ -138,6 +159,9 @@ def test_project_failure_exits_with_error(mock_run, cli_env):
 
     assert add_result.exit_code == 1
     assert "Error adding project" in add_result.output
+
+    assert create_result.exit_code == 1
+    assert "Error creating project" in create_result.output
 
     assert remove_result.exit_code == 1
     assert "Error removing project" in remove_result.output
