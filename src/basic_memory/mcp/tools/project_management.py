@@ -83,14 +83,22 @@ async def switch_project(project_name: str, ctx: Context | None = None) -> str:
         response = await call_get(client, "/projects/projects")
         project_list = ProjectList.model_validate(response.json())
 
-        # Check if project exists
-        project_exists = any(p.name == project_name for p in project_list.projects)
-        if not project_exists:
+        # Check if project exists (case-insensitive)
+        matching_project = None
+        for p in project_list.projects:
+            if p.name.lower() == project_name.lower():
+                matching_project = p
+                break
+        
+        if not matching_project:
             available_projects = [p.name for p in project_list.projects]
             return f"Error: Project '{project_name}' not found. Available projects: {', '.join(available_projects)}"
+        
+        # Use the actual project name from the list (correct case)
+        actual_project_name = matching_project.name
 
         # Switch to the project
-        session.set_current_project(project_name)
+        session.set_current_project(actual_project_name)
         current_project = session.get_current_project()
         project_config = get_project_config(current_project)
 
@@ -99,11 +107,11 @@ async def switch_project(project_name: str, ctx: Context | None = None) -> str:
             response = await call_get(
                 client,
                 f"{project_config.project_url}/project/info",
-                params={"project_name": project_name},
+                params={"project_name": actual_project_name},
             )
             project_info = ProjectInfoResponse.model_validate(response.json())
 
-            result = f"✓ Switched to {project_name} project\n\n"
+            result = f"✓ Switched to {actual_project_name} project\n\n"
             result += "Project Summary:\n"
             result += f"• {project_info.statistics.total_entities} entities\n"
             result += f"• {project_info.statistics.total_observations} observations\n"
@@ -111,11 +119,11 @@ async def switch_project(project_name: str, ctx: Context | None = None) -> str:
 
         except Exception as e:
             # If we can't get project info, still confirm the switch
-            logger.warning(f"Could not get project info for {project_name}: {e}")
-            result = f"✓ Switched to {project_name} project\n\n"
+            logger.warning(f"Could not get project info for {actual_project_name}: {e}")
+            result = f"✓ Switched to {actual_project_name} project\n\n"
             result += "Project summary unavailable.\n"
 
-        return add_project_metadata(result, project_name)
+        return add_project_metadata(result, actual_project_name)
 
     except Exception as e:
         logger.error(f"Error switching to project {project_name}: {e}")
@@ -306,16 +314,24 @@ async def delete_project(project_name: str, ctx: Context | None = None) -> str:
     response = await call_get(client, "/projects/projects")
     project_list = ProjectList.model_validate(response.json())
 
-    # Check if project exists
-    project_exists = any(p.name == project_name for p in project_list.projects)
-    if not project_exists:
+    # Check if project exists (case-insensitive)
+    matching_project = None
+    for p in project_list.projects:
+        if p.name.lower() == project_name.lower():
+            matching_project = p
+            break
+    
+    if not matching_project:
         available_projects = [p.name for p in project_list.projects]
         raise ValueError(
             f"Project '{project_name}' not found. Available projects: {', '.join(available_projects)}"
         )
+    
+    # Use the actual project name from the list (correct case)
+    actual_project_name = matching_project.name
 
     # Call API to delete project
-    response = await call_delete(client, f"/projects/{project_name}")
+    response = await call_delete(client, f"/projects/{actual_project_name}")
     status_response = ProjectStatusResponse.model_validate(response.json())
 
     result = f"✓ {status_response.message}\n\n"
