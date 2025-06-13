@@ -64,8 +64,10 @@ class ProjectService:
         return await self.repository.find_all()
 
     async def get_project(self, name: str) -> Optional[Project]:
-        """Get the file path for a project by name."""
-        return await self.repository.get_by_name(name)
+        """Get the file path for a project by name or permalink."""
+        return await self.repository.get_by_name(name) or await self.repository.get_by_permalink(
+            name
+        )
 
     async def add_project(self, name: str, path: str, set_default: bool = False) -> None:
         """Add a new project to the configuration and database.
@@ -207,7 +209,7 @@ class ProjectService:
 
         # Get all projects from database
         db_projects = await self.repository.get_active_projects()
-        db_projects_by_name = {p.name: p for p in db_projects}
+        db_projects_by_permalink = {p.permalink: p for p in db_projects}
 
         # Get all projects from configuration and normalize names if needed
         config_projects = config_manager.projects.copy()
@@ -235,7 +237,7 @@ class ProjectService:
 
         # Add projects that exist in config but not in DB
         for name, path in config_projects.items():
-            if name not in db_projects_by_name:
+            if name not in db_projects_by_permalink:
                 logger.info(f"Adding project '{name}' to database")
                 project_data = {
                     "name": name,
@@ -247,7 +249,7 @@ class ProjectService:
                 await self.repository.create(project_data)
 
         # Add projects that exist in DB but not in config to config
-        for name, project in db_projects_by_name.items():
+        for name, project in db_projects_by_permalink.items():
             if name not in config_projects:
                 logger.info(f"Adding project '{name}' to configuration")
                 config_manager.add_project(name, project.path)
@@ -347,12 +349,15 @@ class ProjectService:
         # Use specified project or fall back to config project
         project_name = project_name or config.project
         # Get project path from configuration
-        project_path = config_manager.projects.get(project_name)
-        if not project_path:  # pragma: no cover
+        name, project_path = config_manager.get_project(project_name)
+        if not name:  # pragma: no cover
             raise ValueError(f"Project '{project_name}' not found in configuration")
 
+        assert project_path is not None
+        project_permalink = generate_permalink(project_name)
+
         # Get project from database to get project_id
-        db_project = await self.repository.get_by_name(project_name)
+        db_project = await self.repository.get_by_permalink(project_permalink)
         if not db_project:  # pragma: no cover
             raise ValueError(f"Project '{project_name}' not found in database")
 
@@ -367,7 +372,7 @@ class ProjectService:
 
         # Get enhanced project information from database
         db_projects = await self.repository.get_active_projects()
-        db_projects_by_name = {p.name: p for p in db_projects}
+        db_projects_by_permalink = {p.permalink: p for p in db_projects}
 
         # Get default project info
         default_project = config_manager.default_project
@@ -375,7 +380,8 @@ class ProjectService:
         # Convert config projects to include database info
         enhanced_projects = {}
         for name, path in config_manager.projects.items():
-            db_project = db_projects_by_name.get(name)
+            config_permalink = generate_permalink(name)
+            db_project = db_projects_by_permalink.get(config_permalink)
             enhanced_projects[name] = {
                 "path": path,
                 "active": db_project.is_active if db_project else True,

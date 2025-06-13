@@ -9,16 +9,16 @@ from textwrap import dedent
 from fastmcp import Context
 from loguru import logger
 
-from basic_memory.config import get_project_config
 from basic_memory.mcp.async_client import client
 from basic_memory.mcp.project_session import session, add_project_metadata
 from basic_memory.mcp.server import mcp
 from basic_memory.mcp.tools.utils import call_get, call_put, call_post, call_delete
 from basic_memory.schemas import ProjectInfoResponse
 from basic_memory.schemas.project_info import ProjectList, ProjectStatusResponse, ProjectInfoRequest
+from basic_memory.utils import generate_permalink
 
 
-@mcp.tool()
+@mcp.tool("list_memory_projects")
 async def list_projects(ctx: Context | None = None) -> str:
     """List all available projects with their status.
 
@@ -77,33 +77,45 @@ async def switch_project(project_name: str, ctx: Context | None = None) -> str:
     if ctx:  # pragma: no cover
         await ctx.info(f"Switching to project: {project_name}")
 
+    project_permalink = generate_permalink(project_name)
     current_project = session.get_current_project()
     try:
         # Validate project exists by getting project list
         response = await call_get(client, "/projects/projects")
         project_list = ProjectList.model_validate(response.json())
 
-        # Check if project exists
-        project_exists = any(p.name == project_name for p in project_list.projects)
-        if not project_exists:
+        # Find the project by name (case-insensitive) or permalink
+        target_project = None
+        for p in project_list.projects:
+            # Match by permalink (handles case-insensitive input)
+            if p.permalink == project_permalink:
+                target_project = p
+                break
+            # Also match by name comparison (case-insensitive)
+            if p.name.lower() == project_name.lower():
+                target_project = p
+                break
+
+        if not target_project:
             available_projects = [p.name for p in project_list.projects]
             return f"Error: Project '{project_name}' not found. Available projects: {', '.join(available_projects)}"
 
-        # Switch to the project
-        session.set_current_project(project_name)
+        # Switch to the project using the canonical name from database
+        canonical_name = target_project.name
+        session.set_current_project(canonical_name)
         current_project = session.get_current_project()
-        project_config = get_project_config(current_project)
 
         # Get project info to show summary
         try:
+            current_project_permalink = generate_permalink(canonical_name)
             response = await call_get(
                 client,
-                f"{project_config.project_url}/project/info",
-                params={"project_name": project_name},
+                f"/{current_project_permalink}/project/info",
+                params={"project_name": canonical_name},
             )
             project_info = ProjectInfoResponse.model_validate(response.json())
 
-            result = f"✓ Switched to {project_name} project\n\n"
+            result = f"✓ Switched to {canonical_name} project\n\n"
             result += "Project Summary:\n"
             result += f"• {project_info.statistics.total_entities} entities\n"
             result += f"• {project_info.statistics.total_observations} observations\n"
@@ -111,11 +123,11 @@ async def switch_project(project_name: str, ctx: Context | None = None) -> str:
 
         except Exception as e:
             # If we can't get project info, still confirm the switch
-            logger.warning(f"Could not get project info for {project_name}: {e}")
-            result = f"✓ Switched to {project_name} project\n\n"
+            logger.warning(f"Could not get project info for {canonical_name}: {e}")
+            result = f"✓ Switched to {canonical_name} project\n\n"
             result += "Project summary unavailable.\n"
 
-        return add_project_metadata(result, project_name)
+        return add_project_metadata(result, canonical_name)
 
     except Exception as e:
         logger.error(f"Error switching to project {project_name}: {e}")
@@ -163,13 +175,13 @@ async def get_current_project(ctx: Context | None = None) -> str:
         await ctx.info("Getting current project information")
 
     current_project = session.get_current_project()
-    project_config = get_project_config(current_project)
     result = f"Current project: {current_project}\n\n"
 
-    # get project stats
+    # get project stats (use permalink in URL path)
+    current_project_permalink = generate_permalink(current_project)
     response = await call_get(
         client,
-        f"{project_config.project_url}/project/info",
+        f"/{current_project_permalink}/project/info",
         params={"project_name": current_project},
     )
     project_info = ProjectInfoResponse.model_validate(response.json())
@@ -218,7 +230,7 @@ async def set_default_project(project_name: str, ctx: Context | None = None) -> 
     return add_project_metadata(result, session.get_current_project())
 
 
-@mcp.tool()
+@mcp.tool("create_memory_project")
 async def create_project(
     project_name: str, project_path: str, set_default: bool = False, ctx: Context | None = None
 ) -> str:

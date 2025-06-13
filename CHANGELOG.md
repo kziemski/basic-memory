@@ -1,80 +1,314 @@
 # CHANGELOG
 
-
-## v0.13.0 (2025-06-03)
-
-### Features
-
-- **Multi-Project Management System** - Switch between projects instantly during conversations
-  ([`993e88a`](https://github.com/basicmachines-co/basic-memory/commit/993e88a)) 
-  - Instant project switching with session context
-  - Project-specific operations and isolation
-  - Project discovery and management tools
-
-- **Advanced Note Editing** - Incremental editing with append, prepend, find/replace, and section operations
-  ([`6fc3904`](https://github.com/basicmachines-co/basic-memory/commit/6fc3904))
-  - `edit_note` tool with multiple operation types
-  - Smart frontmatter-aware editing
-  - Validation and error handling
-
-- **Smart File Management** - Move notes with database consistency and search reindexing
-  ([`9fb931c`](https://github.com/basicmachines-co/basic-memory/commit/9fb931c))
-  - `move_note` tool with rollback protection
-  - Automatic folder creation and permalink updates
-  - Full database consistency maintenance
-
-- **Enhanced Search Capabilities** - Frontmatter tags now searchable, improved content discovery
-  ([`3f5368e`](https://github.com/basicmachines-co/basic-memory/commit/3f5368e))
-  - YAML frontmatter tag indexing
-  - Improved FTS5 search functionality
-  - Project-scoped search operations
-
-- **Production Features** - OAuth authentication, development builds, comprehensive testing
-  ([`5f8d945`](https://github.com/basicmachines-co/basic-memory/commit/5f8d945))
-  - Development build automation
-  - MCP integration testing framework
-  - Enhanced CI/CD pipeline
+## v0.13.5 (2025-06-11)
 
 ### Bug Fixes
 
-- **#118**: Fix YAML tag formatting to follow standard specification
-  ([`2dc7e27`](https://github.com/basicmachines-co/basic-memory/commit/2dc7e27))
+- **MCP Tools**: Renamed `create_project` tool to `create_memory_project` for namespace isolation
+- **Namespace**: Continued namespace isolation effort to prevent conflicts with other MCP servers
 
-- **#110**: Make --project flag work consistently across CLI commands
-  ([`02dd91a`](https://github.com/basicmachines-co/basic-memory/commit/02dd91a))
+### Changes
 
-- **#93**: Respect custom permalinks in frontmatter for write_note
-  ([`6b6fd76`](https://github.com/basicmachines-co/basic-memory/commit/6b6fd76))
+- Tool functionality remains identical - only the name changed from `create_project` to `create_memory_project`
+- All integration tests updated to use the new tool name
+- Completes namespace isolation for project management tools alongside `list_memory_projects`
 
-- Fix list_directory path display to not include leading slash
-  ([`6057126`](https://github.com/basicmachines-co/basic-memory/commit/6057126))
+## v0.13.4 (2025-06-11)
+
+### Bug Fixes
+
+- **MCP Tools**: Renamed `list_projects` tool to `list_memory_projects` to avoid naming conflicts with other MCP servers
+- **Namespace**: Improved tool naming specificity for better MCP server integration and isolation
+
+### Changes
+
+- Tool functionality remains identical - only the name changed from `list_projects` to `list_memory_projects`
+- All integration tests updated to use the new tool name
+- Better namespace isolation for Basic Memory MCP tools
+
+## v0.13.3 (2025-06-11)
+
+### Bug Fixes
+
+- **Projects**: Fixed case-insensitive project switching where switching succeeded but subsequent operations failed due to session state inconsistency
+- **Config**: Enhanced config manager with case-insensitive project lookup using permalink-based matching
+- **MCP Tools**: Updated project management tools to store canonical project names from database instead of user input
+- **API**: Improved project service to handle both name and permalink lookups consistently
 
 ### Technical Improvements
 
-- **Unified Database Architecture** - Single app-level database for better performance
-  - Migration from per-project databases to unified structure
-  - Project isolation with foreign key relationships
-  - Optimized queries and reduced file I/O
+- Added comprehensive case-insensitive project switching test coverage with 5 new integration test scenarios
+- Fixed permalink generation inconsistencies where different case inputs could generate different permalinks
+- Enhanced project URL construction to use permalinks consistently across all API calls
+- Improved error handling and session state management for project operations
 
-- **Comprehensive Testing** - 100% test coverage with integration testing
-  ([`468a22f`](https://github.com/basicmachines-co/basic-memory/commit/468a22f))
-  - MCP integration test suite
-  - End-to-end testing framework
-  - Performance and edge case validation
+### Changes
 
-### Documentation
+- Project switching now preserves canonical project names from database in session state
+- All project operations use permalink-based lookups for case-insensitive matching
+- Enhanced test coverage ensures reliable case-insensitive project operations
 
-- Add comprehensive testing documentation (TESTING.md)
-- Update project management guides (PROJECT_MANAGEMENT.md)
-- Enhanced note editing documentation (EDIT_NOTE.md)
-- Updated release workflow documentation
+## v0.13.2 (2025-06-11)
 
-### Breaking Changes
+### Features
 
-- **Database Migration**: Automatic migration from per-project to unified database. 
-    Data will be re-index from the filesystem, resulting in no data loss. 
-- **Configuration Changes**: Projects now synced between config.json and database
-- **Full Backward Compatibility**: All existing setups continue to work seamlessly
+- **Release Management**: Added automated release management system with version control in `__init__.py`
+- **Automation**: Implemented justfile targets for `release` and `beta` commands with comprehensive quality gates
+- **CI/CD**: Enhanced release process with automatic version updates, git tagging, and GitHub release creation
+
+### Development Experience
+
+- Added `.claude/commands/release/` directory with automation documentation
+- Implemented release validation including lint, type-check, and test execution
+- Streamlined release workflow from manual process to single-command automation
+
+### Technical Improvements
+
+- Updated package version management to use actual version numbers instead of dynamic versioning
+- Added release process documentation and command references
+- Enhanced justfile with comprehensive release automation targets
+
+## v0.13.1 (2025-06-11)
+
+### Bug Fixes
+
+- **CLI**: Fixed  `basic-memory project` project management commands that were  not working in v0.13.0 (#129)
+- **Projects**: Resolved case sensitivity issues when switching between projects that caused "Project not found" errors (#127)
+- **API**: Standardized CLI project command endpoints and improved error handling
+- **Core**: Implemented consistent project name handling using permalinks to avoid case-related conflicts
+
+### Changes
+
+- Renamed `basic-memory project sync` command to `basic-memory project sync-config` for clarity
+- Improved project switching reliability across different case variations
+- Removed redundant server status messages from CLI error outputs
+
+## v0.13.0 (2025-06-11)
+
+### Overview
+
+Basic Memory v0.13.0 is a **major release** that transforms Basic Memory into a true multi-project knowledge management system. This release introduces fluid project switching, advanced note editing capabilities, robust file management, and production-ready OAuth authentication - all while maintaining full backward compatibility.
+
+**What's New for Users:**
+- 🎯 **Switch between projects instantly** during conversations with Claude
+- ✏️ **Edit notes incrementally** without rewriting entire documents
+- 📁 **Move and organize notes** with full database consistency
+- 📖 **View notes as formatted artifacts** for better readability in Claude Desktop
+- 🔍 **Search frontmatter tags** to discover content more easily
+- 🔐 **OAuth authentication** for secure remote access
+- ⚡ **Development builds** automatically published for beta testing
+
+**Key v0.13.0 Accomplishments:**
+- ✅ **Complete Project Management System** - Project switching and project-specific operations
+- ✅ **Advanced Note Editing** - Incremental editing with append, prepend, find/replace, and section operations  
+- ✅ **View Notes as Artifacts in Claude Desktop/Web** - Use the view_note tool to view a note as an artifact
+- ✅ **File Management System** - Full move operations with database consistency and rollback protection
+- ✅ **Enhanced Search Capabilities** - Frontmatter tags now searchable, improved content discoverability
+- ✅ **Unified Database Architecture** - Single app-level database for better performance and project management
+
+### Major Features
+
+#### 1. Multiple Project Management 
+
+**Switch between projects instantly during conversations:**
+
+```
+💬 "What projects do I have?"
+🤖 Available projects:
+   • main (current, default)
+   • work-notes
+   • personal-journal
+   • code-snippets
+
+💬 "Switch to work-notes"
+🤖 ✓ Switched to work-notes project
+   
+   Project Summary:
+   • 47 entities
+   • 125 observations  
+   • 23 relations
+
+💬 "What did I work on yesterday?"
+🤖 [Shows recent activity from work-notes project]
+```
+
+**Key Capabilities:**
+- **Instant Project Switching**: Change project context mid-conversation without restart
+- **Project-Specific Operations**: Operations work within the currently active project context
+- **Project Discovery**: List all available projects with status indicators
+- **Session Context**: Maintains active project throughout conversation
+- **Backward Compatibility**: Existing single-project setups continue to work seamlessly
+
+#### 2. Advanced Note Editing 
+
+**Edit notes incrementally without rewriting entire documents:**
+
+```python
+# Append new sections to existing notes
+edit_note("project-planning", "append", "\n## New Requirements\n- Feature X\n- Feature Y")
+
+# Prepend timestamps to meeting notes
+edit_note("meeting-notes", "prepend", "## 2025-05-27 Update\n- Progress update...")
+
+# Replace specific sections under headers
+edit_note("api-spec", "replace_section", "New implementation details", section="## Implementation")
+
+# Find and replace with validation
+edit_note("config", "find_replace", "v0.13.0", find_text="v0.12.0", expected_replacements=2)
+```
+
+**Key Capabilities:**
+- **Append Operations**: Add content to end of notes (most common use case)
+- **Prepend Operations**: Add content to beginning of notes
+- **Section Replacement**: Replace content under specific markdown headers
+- **Find & Replace**: Simple text replacements with occurrence counting
+- **Smart Error Handling**: Helpful guidance when operations fail
+- **Project Context**: Works within the active project with session awareness
+
+#### 3. Smart File Management
+
+**Move and organize notes:**
+
+```python
+# Simple moves with automatic folder creation
+move_note("my-note", "work/projects/my-note.md")
+
+# Organize within the active project
+move_note("shared-doc", "archive/old-docs/shared-doc.md")
+
+# Rename operations
+move_note("old-name", "same-folder/new-name.md")
+```
+
+**Key Capabilities:**
+- **Database Consistency**: Updates file paths, permalinks, and checksums automatically
+- **Search Reindexing**: Maintains search functionality after moves
+- **Folder Creation**: Automatically creates destination directories
+- **Project Isolation**: Operates within the currently active project
+- **Link Preservation**: Maintains internal links and references
+
+#### 4. Enhanced Search & Discovery 
+
+**Find content more easily with improved search capabilities:**
+
+- **Frontmatter Tag Search**: Tags from YAML frontmatter are now indexed and searchable
+- **Improved Content Discovery**: Search across titles, content, tags, and metadata
+- **Project-Scoped Search**: Search within the currently active project
+- **Better Search Quality**: Enhanced FTS5 indexing with tag content inclusion
+
+**Example:**
+```yaml
+---
+title: Coffee Brewing Methods
+tags: [coffee, brewing, equipment]
+---
+```
+Now searchable by: "coffee", "brewing", "equipment", or "Coffee Brewing Methods"
+
+#### 5. Unified Database Architecture 
+
+**Single app-level database for better performance and project management:**
+
+- **Migration from Per-Project DBs**: Moved from multiple SQLite files to single app database
+- **Project Isolation**: Proper data separation with project_id foreign keys
+- **Better Performance**: Optimized queries and reduced file I/O
+
+### Complete MCP Tool Suite
+
+#### New Project Management Tools
+- **`list_projects()`** - Discover and list all available projects with status
+- **`switch_project(project_name)`** - Change active project context during conversations
+- **`get_current_project()`** - Show currently active project with statistics
+- **`set_default_project(project_name)`** - Update default project configuration
+- **`sync_status()`** - Check file synchronization status and background operations
+
+#### New Note Operations Tools
+- **`edit_note()`** - Incremental note editing (append, prepend, find/replace, section replace)
+- **`move_note()`** - Move notes with database consistency and search reindexing
+- **`view_note()`** - Display notes as formatted artifacts for better readability in Claude Desktop
+
+#### Enhanced Existing Tools
+All existing tools now support:
+- **Session context awareness** (operates within the currently active project)
+- **Enhanced error messages** with project context metadata
+- **Improved response formatting** with project information footers
+- **Project isolation** ensures operations stay within the correct project boundaries
+
+
+### User Experience Improvements
+
+#### Installation Options
+
+**Multiple ways to install and test Basic Memory:**
+
+```bash
+# Stable release
+uv tool install basic-memory
+
+# Beta/pre-releases
+uv tool install basic-memory --pre
+```
+
+
+#### Bug Fixes & Quality Improvements
+
+**Major issues resolved in v0.13.0:**
+
+- **#118**: Fixed YAML tag formatting to follow standard specification
+- **#110**: Fixed `--project` flag consistency across all CLI commands
+- **#107**: Fixed write_note update failures with existing notes
+- **#93**: Fixed custom permalink handling in frontmatter
+- **#52**: Enhanced search capabilities with frontmatter tag indexing
+- **FTS5 Search**: Fixed special character handling in search queries
+- **Error Handling**: Improved error messages and validation across all tools
+
+### Breaking Changes & Migration
+
+#### For Existing Users
+
+**Automatic Migration**: First run will automatically migrate existing data to the new unified database structure. No manual action required.
+
+**What Changes:**
+- Database location: Moved to `~/.basic-memory/memory.db` (unified across projects)
+- Configuration: Projects defined in `~/.basic-memory/config.json` are synced with database
+
+**What Stays the Same:**
+- All existing notes and data remain unchanged
+- Default project behavior maintained for single-project users
+- All existing MCP tools continue to work without modification
+
+### Documentation & Resources
+
+#### New Documentation
+- [Project Management Guide](docs/Project%20Management.md) - Multi-project workflows
+- [Note Editing Guide](docs/Note%20Editing.md) - Advanced editing techniques
+
+#### Updated Documentation
+- [README.md](README.md) - Installation options and beta build instructions
+- [CONTRIBUTING.md](CONTRIBUTING.md) - Release process and version management
+- [CLAUDE.md](CLAUDE.md) - Development workflow and CI/CD documentation
+- [Claude.ai Integration](docs/Claude.ai%20Integration.md) - Updated MCP tool examples
+
+#### Quick Start Examples
+
+**Project Switching:**
+```
+💬 "Switch to my work project and show recent activity"
+🤖 [Calls switch_project("work") then recent_activity()]
+```
+
+**Note Editing:**
+```
+💬 "Add a section about deployment to my API docs"
+🤖 [Calls edit_note("api-docs", "append", "## Deployment\n...")]
+```
+
+**File Organization:**
+```
+💬 "Move my old meeting notes to the archive folder"
+🤖 [Calls move_note("meeting-notes", "archive/old-meetings.md")]
+```
+
 
 
 ## v0.12.3 (2025-04-17)
