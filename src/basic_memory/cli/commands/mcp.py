@@ -40,11 +40,12 @@ def mcp(
     auth_enabled = os.getenv("FASTMCP_AUTH_ENABLED", "false").lower() == "true"
     if auth_enabled:
         logger.info("OAuth authentication is ENABLED")
-        logger.info(f"Issuer URL: {os.getenv('FASTMCP_AUTH_ISSUER_URL', 'http://localhost:8000')}")
-        if os.getenv("FASTMCP_AUTH_REQUIRED_SCOPES"):
-            logger.info(f"Required scopes: {os.getenv('FASTMCP_AUTH_REQUIRED_SCOPES')}")
+        print("OAuth authentication is ENABLED")
+        logger.info(f"JWKS URL: {os.getenv('FASTMCP_AUTH_JWKS_URI', None)}")
+        print(f"JWKS URL: {os.getenv('FASTMCP_AUTH_JWKS_URI', None)}")
     else:
         logger.info("OAuth authentication is DISABLED")
+        print("OAuth authentication is DISABLED")
 
     from basic_memory.config import app_config
     from basic_memory.services.initialization import initialize_file_sync

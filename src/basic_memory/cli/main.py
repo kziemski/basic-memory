@@ -1,10 +1,12 @@
 """Main CLI entry point for basic-memory."""  # pragma: no cover
+from dotenv import load_dotenv
 
 from basic_memory.cli.app import app  # pragma: no cover
 
+load_dotenv()
+
 # Register commands
 from basic_memory.cli.commands import (  # noqa: F401  # pragma: no cover
-    auth,
     db,
     import_chatgpt,
     import_claude_conversations,
