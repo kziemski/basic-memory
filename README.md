@@ -13,8 +13,11 @@ Basic Memory lets you build persistent knowledge through natural conversations w
 Claude, while keeping everything in simple Markdown files on your computer. It uses the Model Context Protocol (MCP) to
 enable any compatible LLM to read and write to your local knowledge base.
 
-- Website: https://basicmachines.co
+- Website: https://basicmemory.com
+- Company: https://basicmachines.co
 - Documentation: https://memory.basicmachines.co
+- Discord: https://discord.gg/tyvKNccgqN
+- YouTube: https://www.youtube.com/@basicmachines-co
 
 ## Pick up your conversation right where you left off
 
