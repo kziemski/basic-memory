@@ -24,7 +24,7 @@ class TestMCPServer:
             # Missing FASTMCP_AUTH_JWKS_URI
         }
 
-        with patch.dict(os.environ, env_vars):
+        with patch.dict(os.environ, env_vars, clear=True):
             auth_settings, auth_provider = create_auth_config()
             assert auth_settings is None
             assert auth_provider is None
@@ -37,7 +37,7 @@ class TestMCPServer:
             # Missing FASTMCP_AUTH_ISSUER
         }
 
-        with patch.dict(os.environ, env_vars):
+        with patch.dict(os.environ, env_vars, clear=True):
             auth_settings, auth_provider = create_auth_config()
             assert auth_settings is None
             assert auth_provider is None
@@ -50,15 +50,15 @@ class TestMCPServer:
             "FASTMCP_AUTH_ISSUER": "https://example.supabase.co/auth/v1",
         }
 
-        with patch.dict(os.environ, env_vars):
+        with patch.dict(os.environ, env_vars, clear=True):
             auth_settings, auth_provider = create_auth_config()
 
             # JWT validation doesn't need OAuth settings
             assert auth_settings is None
 
-            # Should have a combined JWT validator with tenant middleware
+            # Should have a BearerAuthProvider (tenant validation is in middleware)
             assert auth_provider is not None
-            assert auth_provider.__class__.__name__ == "JWTValidatorWithTenant"
+            assert auth_provider.__class__.__name__ == "BearerAuthProvider"
 
     def test_create_auth_config_disabled_explicitly(self):
         """Test auth config creation when explicitly disabled."""
@@ -68,7 +68,7 @@ class TestMCPServer:
             "FASTMCP_AUTH_ISSUER": "https://example.supabase.co/auth/v1",
         }
 
-        with patch.dict(os.environ, env_vars):
+        with patch.dict(os.environ, env_vars, clear=True):
             auth_settings, auth_provider = create_auth_config()
             assert auth_settings is None
             assert auth_provider is None

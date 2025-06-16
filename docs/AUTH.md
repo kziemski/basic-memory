@@ -28,9 +28,10 @@ Basic Memory follows a **proxy-based authentication architecture** where:
 - Checks token expiration and standard JWT claims
 
 ### 2. Tenant Validation 
-- **TenantValidationMiddleware** extracts and validates tenant claims
+- **TenantValidationMiddleware** (Starlette middleware) extracts and validates tenant claims
 - Ensures the JWT contains the correct `tenant_id` for this Basic Memory instance
 - Prevents cross-tenant data access (zero-trust security)
+- Only validates requests to `/mcp` endpoints when authentication is enabled
 
 ### 3. Request Processing
 - If both validations pass, the request proceeds to MCP endpoints
@@ -47,6 +48,7 @@ FASTMCP_AUTH_ENABLED=true
 # JWT validation configuration
 FASTMCP_AUTH_JWKS_URI=https://your-auth-server.com/.well-known/jwks.json
 FASTMCP_AUTH_ISSUER=https://your-auth-server.com
+FASTMCP_AUTH_AUDIENCE=basic-memory-mcp
 
 # Tenant isolation (optional but recommended for multi-tenant)
 BASIC_MEMORY_TENANT_ID=your-tenant-id
@@ -59,6 +61,7 @@ BASIC_MEMORY_TENANT_ID=your-tenant-id
 | `FASTMCP_AUTH_ENABLED` | No | Enable/disable authentication | `true` or `false` (default: `false`) |
 | `FASTMCP_AUTH_JWKS_URI` | Yes* | JWKS endpoint for JWT verification | `https://auth.supabase.co/rest/v1/auth/jwks` |
 | `FASTMCP_AUTH_ISSUER` | Yes* | Expected JWT issuer | `https://auth.supabase.co/auth/v1` |
+| `FASTMCP_AUTH_AUDIENCE` | No | Expected JWT audience | `basic-memory-mcp` (default) |
 | `BASIC_MEMORY_TENANT_ID` | No | Expected tenant ID for this instance | `tenant-123` |
 
 *Required when `FASTMCP_AUTH_ENABLED=true`
@@ -71,7 +74,7 @@ Basic Memory expects JWTs with the following structure:
 ```json
 {
   "iss": "https://your-auth-server.com",  // Must match FASTMCP_AUTH_ISSUER
-  "aud": "basic-memory-mcp",              // Fixed audience
+  "aud": "basic-memory-mcp",              // Must match FASTMCP_AUTH_AUDIENCE
   "sub": "user-id-123",                   // User identifier
   "exp": 1672531200,                      // Expiration timestamp
   "iat": 1672444800                       // Issued at timestamp

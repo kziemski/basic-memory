@@ -52,7 +52,6 @@ def create_auth_config() -> tuple[AuthSettings | None, Any | None]:
     if os.getenv("FASTMCP_AUTH_ENABLED", "false").lower() == "true":
         # Only support JWT validation, no OAuth provider endpoints
         from fastmcp.server.auth import BearerAuthProvider
-        from basic_memory.mcp.tenant_middleware import create_tenant_middleware
 
         # Get JWT validation configuration
         jwks_uri = os.getenv("FASTMCP_AUTH_JWKS_URI")
@@ -68,41 +67,29 @@ def create_auth_config() -> tuple[AuthSettings | None, Any | None]:
             return None, None
 
         # Create FastMCP Bearer auth provider for JWT validation
+        # This handles JWT signature validation via JWKS
+        audience = os.getenv("FASTMCP_AUTH_AUDIENCE", "basic-memory-mcp")
+        
+        from loguru import logger
+        logger.info(f"Configuring JWT validation with:")
+        logger.info(f"  JWKS URI: {jwks_uri}")
+        logger.info(f"  Issuer: {issuer}")
+        logger.info(f"  Audience: {audience}")
+        
         bearer_auth_provider = BearerAuthProvider(
-            jwks_uri=jwks_uri, issuer=issuer, audience="basic-memory-mcp"
+            jwks_uri=jwks_uri, issuer=issuer, audience=audience
         )
 
-        # Add tenant validation middleware
-        tenant_middleware = create_tenant_middleware()
-
-        # Combine JWT validation with tenant validation
-        class JWTValidatorWithTenant:
-            """Combines FastMCP JWT validation with tenant validation."""
-
-            def __init__(self, bearer_auth, tenant_validator):
-                self.bearer_auth = bearer_auth
-                self.tenant_validator = tenant_validator
-
-            async def __call__(self, request):
-                # First: FastMCP validates JWT signature via JWKS
-                await self.bearer_auth(request)
-
-                # Second: Validate tenant claims
-                user_context = await self.tenant_validator(request)
-                return user_context
-
-        combined_auth = JWTValidatorWithTenant(bearer_auth_provider, tenant_middleware)
-        return None, combined_auth
+        # Note: Tenant validation will be handled separately in the FastMCP server setup
+        # via tenant middleware that gets added to the server instance
+        return None, bearer_auth_provider
 
     return None, None
 
 
-# Create auth configuration
-auth_settings, auth_provider = create_auth_config()
-
-# Create the shared server instance
+# Create the shared server instance without auth (will be set up in CLI)
 mcp = FastMCP(
     name="Basic Memory",
-    log_level="DEBUG",
-    auth=auth_provider,
+    log_level="INFO",  # Set to INFO to see auth details without too much noise
+    # auth will be set in the CLI command based on environment
 )

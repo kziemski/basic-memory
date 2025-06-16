@@ -39,13 +39,19 @@ def mcp(
 
     auth_enabled = os.getenv("FASTMCP_AUTH_ENABLED", "false").lower() == "true"
     if auth_enabled:
-        logger.info("OAuth authentication is ENABLED")
-        print("OAuth authentication is ENABLED")
+        logger.info("JWT authentication is ENABLED")
+        print("JWT authentication is ENABLED")
         logger.info(f"JWKS URL: {os.getenv('FASTMCP_AUTH_JWKS_URI', None)}")
         print(f"JWKS URL: {os.getenv('FASTMCP_AUTH_JWKS_URI', None)}")
+        logger.info(f"Issuer: {os.getenv('FASTMCP_AUTH_ISSUER', None)}")
+        print(f"Issuer: {os.getenv('FASTMCP_AUTH_ISSUER', None)}")
+        logger.info(f"Audience: {os.getenv('FASTMCP_AUTH_AUDIENCE', 'basic-memory-mcp')}")
+        print(f"Audience: {os.getenv('FASTMCP_AUTH_AUDIENCE', 'basic-memory-mcp')}")
+        logger.info(f"Tenant ID: {os.getenv('BASIC_MEMORY_TENANT_ID', None)}")
+        print(f"Tenant ID: {os.getenv('BASIC_MEMORY_TENANT_ID', None)}")
     else:
-        logger.info("OAuth authentication is DISABLED")
-        print("OAuth authentication is DISABLED")
+        logger.info("JWT authentication is DISABLED")
+        print("JWT authentication is DISABLED")
 
     from basic_memory.config import app_config
     from basic_memory.services.initialization import initialize_file_sync
@@ -73,6 +79,22 @@ def mcp(
         sync_thread.start()
         logger.info("Started file sync in background")
 
+    # Set up authentication if enabled
+    if auth_enabled:
+        from basic_memory.mcp.server import create_auth_config
+        _, auth_provider = create_auth_config()
+        mcp_server.auth = auth_provider
+        logger.info("JWT authentication configured")
+
+    # Add tenant validation middleware if auth is enabled
+    middleware = []
+    if auth_enabled:
+        from starlette.middleware import Middleware
+        from basic_memory.mcp.tenant_middleware import TenantValidationMiddleware
+        
+        middleware.append(Middleware(TenantValidationMiddleware))
+        logger.info("Added tenant validation middleware")
+
     # Now run the MCP server (blocks)
     logger.info(f"Starting MCP server with {transport.upper()} transport")
 
@@ -86,4 +108,5 @@ def mcp(
             host=host,
             port=port,
             path=path,
+            middleware=middleware,
         )
