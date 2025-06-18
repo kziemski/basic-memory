@@ -331,7 +331,15 @@ class EntityService(BaseService[EntityModel]):
                         suffix += 1
                     logger.debug(f"Using unique permalink: {model.permalink}")
                     # Try to create with unique permalink
-                    return await self.repository.add(model)
+                    try:
+                        return await self.repository.add(model)
+                    except IntegrityError as e:
+                        logger.error(
+                            f"IntegrityError while adding entity with unique permalink: {model.permalink}. Error: {e}"
+                        )
+                        raise EntityCreationError(
+                            f"Failed to create entity with unique permalink: {model.permalink}"
+                        )
             else:
                 # Re-raise if it's a different integrity error
                 raise
