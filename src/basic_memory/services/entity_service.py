@@ -315,7 +315,7 @@ class EntityService(BaseService[EntityModel]):
                 if existing_entity and existing_entity.file_path == str(file_path):
                     # Same file - update existing entity
                     logger.info(
-                        f"Entity already exists for file_path={file_path}, updating instead of creating"
+                        f"Entity already exists for permalink={model.permalink}, updating instead of creating"
                     )
                     return await self.update_entity_and_observations(file_path, markdown)
                 else:
