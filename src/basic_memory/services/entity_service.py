@@ -302,14 +302,36 @@ class EntityService(BaseService[EntityModel]):
         try:
             return await self.repository.add(model)
         except IntegrityError as e:
-            # Handle race condition where entity was created by another process
-            if "UNIQUE constraint failed: entity.file_path" in str(
-                e
-            ) or "UNIQUE constraint failed: entity.permalink" in str(e):
+            # Handle different types of UNIQUE constraint failures
+            if "UNIQUE constraint failed: entity.file_path" in str(e):
+                # File path conflict - update existing entity
                 logger.info(
-                    f"Entity already exists for file_path={file_path} (file_path or permalink conflict), updating instead of creating"
+                    f"Entity already exists for file_path={file_path}, updating instead of creating"
                 )
                 return await self.update_entity_and_observations(file_path, markdown)
+            elif "UNIQUE constraint failed: entity.permalink" in str(e):
+                # Permalink conflict - check if it's the same file or different file
+                existing_entity = await self.repository.get_by_permalink(model.permalink)
+                if existing_entity and existing_entity.file_path == str(file_path):
+                    # Same file - update existing entity
+                    logger.info(
+                        f"Entity already exists for file_path={file_path}, updating instead of creating"
+                    )
+                    return await self.update_entity_and_observations(file_path, markdown)
+                else:
+                    # Different file with same permalink - generate unique permalink
+                    logger.info(
+                        f"Permalink conflict for {model.permalink}, generating unique permalink"
+                    )
+                    # Generate unique permalink
+                    base_permalink = model.permalink
+                    suffix = 1
+                    while await self.repository.get_by_permalink(model.permalink):
+                        model.permalink = f"{base_permalink}-{suffix}"
+                        suffix += 1
+                    logger.debug(f"Using unique permalink: {model.permalink}")
+                    # Try to create with unique permalink
+                    return await self.repository.add(model)
             else:
                 # Re-raise if it's a different integrity error
                 raise
